@@ -1,0 +1,26 @@
+syntax = "proto3";
+package api;
+
+option go_package = "github.com/nakamaFramework/cgp-common-module/api";
+
+message Bank {
+  string sender_id = 1;
+  string recipient_id = 2;
+  int64 chips = 3;
+  int64 chips_in_bank = 4;
+  enum Action {
+    ACTION_UNSPECIFIED = 0;
+    ACTION_SEND_GIFT = 1;
+    ACTION_RECV_GIFT = 2;
+    ACTION_REVERT_SEND_GIF = 3;
+    ACTION_PUSH_TO_SAFE = 4;
+    ACTION_WITHDRAW = 5;
+  }
+  Action action = 5;
+  int64 balance_prev = 6;
+  int64 balance_curr = 7;
+  int64 percen_fee = 8;
+  int64 amount_fee = 9;
+  int64 sender_sid = 10;
+  int64 recipient_sid = 11;
+}

@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+// The realtime protocol for the template match engine.
+package api;
+
+option go_package = "github.com/nakamaFramework/cgp-bing-module/api";
+
+enum Color {
+  COLOR_UNSPECIFIED = 0;
+  COLOR_YELLOW = 1;
+  COLOR_WHITE = 2;
+  COLOR_PINK = 4;
+  COLOR_BLUE = 8;
+  COLOR_RED = 16;
+  COLOR_GREEN = 32;
+}
+
+message BetResult {
+  string user_id = 1;
+  repeated InfoBet bets = 2;
+  bool is_win = 3;
+}
+
+message ColorGameFinish {
+  ListColor roll_color = 1;
+  repeated BetResult bet_results = 2;
+  HistoryRoll history_rolls = 3;
+}
+
+message ListColor {
+  repeated int32 colors = 1;
+}
+
+message RateColor {
+  int32 id = 1;
+  int32 percent = 2;
+}
+
+message HistoryRoll {
+  repeated ListColor list_colors = 1;
+  repeated RateColor rate_colors = 2;
+}
+
+message InfoBet {
+  int32 id = 1;
+  int64 chips = 2;
+  int32 n_user_bet = 3;
+  string desp = 4;
+  int32 req_spec_game = 5;
+  // broadcast new game data
+  bool emit_newgame_event = 6;
+  // delay broadcast result endgame, unit 1s,1m, 1h, golang durationformat
+  string delay_emit_result = 7;
+}
+
+message ListInfoBet {
+  repeated InfoBet list_bets = 1;
+}
+
+// message Deck {
+//   repeated Color colors = 1;
+//   repeated CellInfo cell_infos = 2;
+//   repeated ColorBet bets = 3;
+// }
+
+message UpdateDesk {
+  int32 n_player = 1;
+  bool update_user_bets = 2;
+  bool update_cell_bets = 3;
+  repeated InfoBet user_bets = 4;
+  repeated InfoBet cell_bets = 5;
+  bool update_history_roll = 6;
+  HistoryRoll history_rolls = 7;
+}

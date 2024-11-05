@@ -1,0 +1,10 @@
+version: v1
+plugins:
+  - plugin: buf.build/community/stephenh-ts-proto
+    out: ./ts
+    # strategy: all
+    # path: protoc-gen-ts_proto
+  - plugin: go
+    path: ["go", "run", "google.golang.org/protobuf/cmd/protoc-gen-go"]
+    out: ./
+    opt: paths=source_relative

@@ -1,0 +1,359 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/nakamaFramework/cgp-bing-module/api";
+import "color_game.proto";
+
+message SlotDesk {
+  // ma trận rowxcol ở dạng array 1 chiều,
+  // thể hiện các symbol hiện tại của game
+  SlotMatrix matrix = 1;
+  // ma trận 5x3 ở dạng array 1 chiều,
+  //  thể hiện các symbol hiện tại của game, đã áp dụng rule thay thế wild
+  SlotMatrix spread_matrix = 4;
+  // mảng chưa danh sách payline đã win.
+  repeated Payline paylines = 5;
+  // mức cược hiện tại của lần spin
+  int64 chips_mcb = 6;
+  // loại game kế tiếp user sẽ chơi
+  SiXiangGame next_sixiang_game = 7;
+  // loại game hiện tại user đang chơi
+  SiXiangGame current_sixiang_game = 100;
+  // true khi kết thúc game, và có hành động cập nhật số dư ví của user
+  // ví dụ game bình thường mỗi lần spin thì sẽ kết thúc game và + tiền
+  // nhưng các game đặc biệt như bonus, lucky draw ...
+  // thì sau x lần spin mới end game
+  // khi đó mới cộng tiền
+  bool is_finish_game = 101;
+  // Is sixinag bonus, x4 reward, chưa làm
+  bool is_in_sixiang_bonus = 110;
+  // các mảng symbol quay được ở các game đặc biệt.
+  repeated SpinSymbol spin_symbols = 8;
+  // loại jackot đã win
+  WinJackpot win_jp = 9;
+  // loại big win (mega, huge, big...)
+  BigWin big_win = 11;
+  // tổng số chip thắng trong game
+  // int64 chips_win = 13;
+  // cap nhat bien dong so du trong wallet
+  // nếu true, có nghĩa có action cộng tiền ở wallet
+  // nếu fale, 2 giá trị balance_chips_wallet_before và
+  // balance_chips_wallet_after luôn = 0, nên bỏ qua
+  // bool update_wallet = 104;
+  GameReward game_reward = 14;
+  // int64 total_chips_win_by_game = 17;
+  // số chip trong wallet trước spin
+  // các symbol đặc biệt thu thập được,
+  // vd như eye ở sixiang, letter ở tarzan
+  repeated CollectSymbol collection_symbols = 16;
+  // ngọc rừng xanh ở tarzan game
+  int64 ts_unix = 21;
+  int64 ratio_fruit_basket = 22;
+  // số lượt spin còn lại, -1 = unlimited
+  int64 num_spin_left = 23;
+  repeated int64 bet_levels = 24;
+  InfoBet info_bet = 25;
+  int64 chips_buy_gem = 26;
+  // số ngọc collect được để mở SI XIANG BONUS game
+  // symbol is
+  // SI_XIANG_GAME_DRAGON_PEARL
+  // SI_XIANG_GAME_LUCKDRAW
+  // SI_XIANG_GAME_GOLDPICK
+  // SI_XIANG_GAME_RAPIDPAY
+  repeated SiXiangGame sixiang_gems = 27;
+  repeated SiXiangSymbol letter_symbols = 28;
+  JackpotHistory win_jp_history = 29;
+  GameConfig game_config = 30;
+}
+
+message GameConfig {
+  int64 num_scatter_seq = 1;
+  int64 num_free_spin = 2;
+  int64 num_wild = 3;
+  float ratio_wild=4;
+  float ratio_basket=5;
+
+}
+
+// Ma trận symbol
+message SlotMatrix {
+  // Mảng 2 chiều ở dạng list, rowxcol
+  repeated SiXiangSymbol lists = 1;
+  // số hàng tối đa
+  int32 rows = 2;
+  // số cột tối đa
+  int32 cols = 3;
+  repeated SpinSymbol spin_lists = 4;
+}
+
+// Symbol quay được
+// có số hàng là row, côt là col
+// với ô đầu tính ở (0,0)
+message SpinSymbol {
+  SiXiangSymbol symbol = 1;
+  int32 col = 2;
+  int32 row = 3;
+  float ratio = 4;
+  int32 index = 5;
+  WinJackpot win_jp = 6;
+  int64 win_amount = 7;
+  float ratio_bonus = 8;
+}
+
+//
+enum SiXiangSymbol {
+  SI_XIANG_SYMBOL_UNSPECIFIED = 0x000;
+  SI_XIANG_SYMBOL_10 = 0x001;
+  SI_XIANG_SYMBOL_J = 0x002;
+  SI_XIANG_SYMBOL_Q = 0x004;
+  SI_XIANG_SYMBOL_K = 0x008;
+  SI_XIANG_SYMBOL_A = 0x010;
+  SI_XIANG_SYMBOL_BLUE_DRAGON = 0x20;
+  SI_XIANG_SYMBOL_WHITE_TIGER = 0x40;
+  SI_XIANG_SYMBOL_VERMILION_BIRD = 0x80;
+  SI_XIANG_SYMBOL_WARRIOR = 0x100;
+  SI_XIANG_SYMBOL_SCATTER = 0x200;
+
+  // Bonus game
+  SI_XIANG_SYMBOL_BONUS_DRAGONBALL = 0x401;
+  SI_XIANG_SYMBOL_BONUS_LUCKYDRAW = 0x402;
+  SI_XIANG_SYMBOL_BONUS_GOLDPICK = 0x403;
+  SI_XIANG_SYMBOL_BONUS_RAPIDPAY = 0x404;
+  SI_XIANG_SYMBOL_BONUS_GOLDX10 = 0x405;
+  SI_XIANG_SYMBOL_BONUS_GOLDX20 = 0x406;
+  SI_XIANG_SYMBOL_BONUS_GOLDX30 = 0x407;
+  SI_XIANG_SYMBOL_BONUS_GOLDX50 = 0x408;
+  // Dragon Pearl
+  // bao li xi, quay random ra eye bird/dragon...
+  SI_XIANG_SYMBOL_DRAGONPEARL_LUCKMONEY = 0x500;
+  // ngoc tien random mcb
+  SI_XIANG_SYMBOL_DRAGONPEARL_GEM_RANDOM1 = 0x501;
+  SI_XIANG_SYMBOL_DRAGONPEARL_GEM_RANDOM2 = 0x502;
+  SI_XIANG_SYMBOL_DRAGONPEARL_GEM_RANDOM3 = 0x503;
+  SI_XIANG_SYMBOL_DRAGONPEARL_GEM_RANDOM4 = 0x504;
+  SI_XIANG_SYMBOL_DRAGONPEARL_GEM_RANDOM5 = 0x505;
+  SI_XIANG_SYMBOL_DRAGONPEARL_EYE_BIRD = 0x510;
+  SI_XIANG_SYMBOL_DRAGONPEARL_EYE_TIGER = 0x511;
+  SI_XIANG_SYMBOL_DRAGONPEARL_EYE_WARRIOR = 0x512;
+  SI_XIANG_SYMBOL_DRAGONPEARL_EYE_DRAGON = 0x513;
+  SI_XIANG_SYMBOL_DRAGONPEARL_JP_MINOR = 0x514;
+  SI_XIANG_SYMBOL_DRAGONPEARL_JP_MAJOR = 0x515;
+  SI_XIANG_SYMBOL_DRAGONPEARL_JP_MEGA = 0x516;
+  SI_XIANG_SYMBOL_DRAGONPEARL_JP_GRAND = 0x517;
+
+  // LUCKY DRAW SYMBOL
+  SI_XIANG_SYMBOL_LUCKYDRAW_MINOR = 0x600;
+  SI_XIANG_SYMBOL_LUCKYDRAW_MAJOR = 0x601;
+  SI_XIANG_SYMBOL_LUCKYDRAW_MEGA = 0x602;
+  SI_XIANG_SYMBOL_LUCKYDRAW_GRAND = 0x603;
+  SI_XIANG_SYMBOL_LUCKYDRAW_GOLD_1 = 0x604;
+  SI_XIANG_SYMBOL_LUCKYDRAW_GOLD_2 = 0x605;
+  SI_XIANG_SYMBOL_LUCKYDRAW_GOLD_3 = 0x606;
+
+  // GOLP PICK
+  SI_XIANG_SYMBOL_GOLD_PICK_TRYAGAIN = 0x700;
+  SI_XIANG_SYMBOL_GOLD_PICK_GOLD1 = 0x701;
+  SI_XIANG_SYMBOL_GOLD_PICK_GOLD2 = 0x702;
+  SI_XIANG_SYMBOL_GOLD_PICK_GOLD3 = 0x703;
+  SI_XIANG_SYMBOL_GOLD_PICK_GOLD4 = 0x704;
+  SI_XIANG_SYMBOL_GOLD_PICK_GOLD5 = 0x705;
+  SI_XIANG_SYMBOL_GOLD_PICK_JP_MINOR = 0x706;
+  SI_XIANG_SYMBOL_GOLD_PICK_JP_MAJOR = 0x707;
+  SI_XIANG_SYMBOL_GOLD_PICK_JP_MEGA = 0x708;
+
+  // RAPID PAY SYMBOL
+  SI_XIANG_SYMBOL_RAPIDPAY_END = 0x800;
+  SI_XIANG_SYMBOL_RAPIDPAY_X2 = 0x801;
+  SI_XIANG_SYMBOL_RAPIDPAY_X3 = 0x802;
+  SI_XIANG_SYMBOL_RAPIDPAY_X4 = 0x803;
+  SI_XIANG_SYMBOL_RAPIDPAY_LUCKYBOX = 0x804;
+
+  // SIXANGBONUS
+  SI_XIANG_SYMBOL_SIXANGBONUS_DRAGONPEARL_GAME = 0x901;
+  SI_XIANG_SYMBOL_SIXANGBONUS_LUCKYDRAW_GAME = 0x902;
+  SI_XIANG_SYMBOL_SIXANGBONUS_GOLDPICK_GAME = 0x903;
+  SI_XIANG_SYMBOL_SIXANGBONUS_RAPIDPAY_GAME = 0x904;
+
+  /* Tazan symbol */
+  SI_XIANG_SYMBOL_GORILLE = 0x1001;
+  SI_XIANG_SYMBOL_ELEPHANT = 0x1002;
+  SI_XIANG_SYMBOL_JAGUAR = 0x1003;
+  SI_XIANG_SYMBOL_SNACK = 0x1004;
+  SI_XIANG_SYMBOL_JANE = 0x1005;
+  SI_XIANG_SYMBOL_JANE_FATHER = 0x1006;
+  SI_XIANG_SYMBOL_CLAYTON = 0x1007;
+  SI_XIANG_SYMBOL_FREE_SPIN = 0x1008;
+  SI_XIANG_SYMBOL_TARZAN = 0x1009;
+  SI_XIANG_SYMBOL_LETTER_J = 0x1010;
+  SI_XIANG_SYMBOL_LETTER_U = 0x1011;
+  SI_XIANG_SYMBOL_LETTER_N = 0x1012;
+  SI_XIANG_SYMBOL_LETTER_G = 0x1013;
+  SI_XIANG_SYMBOL_LETTER_L = 0x1014;
+  SI_XIANG_SYMBOL_LETTER_E = 0x1015;
+  SI_XIANG_SYMBOL_DIAMOND = 0x1016;
+
+  SI_XIANG_SYMBOL_TARZAN_MORE_TURNX2 = 0x01020;
+  SI_XIANG_SYMBOL_TARZAN_MORE_TURNX3 = 0x01021;
+  SI_XIANG_SYMBOL_TARZAN_RANDOM_1 = 0x01022;
+  SI_XIANG_SYMBOL_TARZAN_RANDOM_2 = 0x01023;
+  SI_XIANG_SYMBOL_TARZAN_RANDOM_3 = 0x01024;
+  SI_XIANG_SYMBOL_TARZAN_RANDOM_4 = 0x01025;
+  SI_XIANG_SYMBOL_TARZAN_RANDOM_5 = 0x01026;
+  // Juice Garden
+  SI_XIANG_SYMBOL_JUICE_STRAWBERRY = 0X01101;
+  SI_XIANG_SYMBOL_JUICE_WATERMELON = 0X01102;
+  SI_XIANG_SYMBOL_JUICE_PINAPPLE = 0X01103;
+  SI_XIANG_SYMBOL_JUICE_MANGOSTEEN = 0X01104;
+  SI_XIANG_SYMBOL_JUICE_STONE_DIAMOND = 0X01105;
+  SI_XIANG_SYMBOL_JUICE_STONE_GREEN = 0X01106;
+  SI_XIANG_SYMBOL_JUICE_STONE_VIOLET = 0X01107;
+  SI_XIANG_SYMBOL_JUICE_SCATTERS_X3 = 0x01108;
+  SI_XIANG_SYMBOL_JUICE_SCATTERS_X4 = 0x01109;
+  SI_XIANG_SYMBOL_JUICE_SCATTERS_X5 = 0x01110;
+  // fruit basket game
+  SI_XIANG_SYMBOL_JUICE_FRUITBASKET_SPIN = 0x01111;
+  SI_XIANG_SYMBOL_JUICE_FRUITBASKET_GRAND = 0X01112;
+  SI_XIANG_SYMBOL_JUICE_FRUITBASKET_MAJOR = 0X01113;
+  SI_XIANG_SYMBOL_JUICE_FRUITBASKET_MINOR = 0X01114;
+  SI_XIANG_SYMBOL_JUICE_FRUITBASKET_MINI = 0X01115;
+
+  // fruit rain
+  SI_XIANG_SYMBOL_JUICE_FRUITBASKET_RANDOM_1 = 0X01120;
+  SI_XIANG_SYMBOL_JUICE_FRUITBASKET_RANDOM_2 = 0X01121;
+  SI_XIANG_SYMBOL_JUICE_FRUITBASKET_RANDOM_3 = 0X01122;
+  SI_XIANG_SYMBOL_JUICE_FRUITBASKET_RANDOM_4 = 0X01123;
+  SI_XIANG_SYMBOL_JUICE_FRUITBASKET_RANDOM_5 = 0X01124;
+  SI_XIANG_SYMBOL_JUICE_FRUITBASKET_RANDOM_6 = 0X01125;
+  SI_XIANG_SYMBOL_JUICE_FRUITBASKET_RANDOM_7 = 0X01126;
+
+  SI_XIANG_SYMBOL_JUICE_FUIT_SELECT_FREE_GAME = 0x01127;
+  SI_XIANG_SYMBOL_JUICE_FUIT_SELECT_FRUIT_RAIN = 0x01128;
+  //inca
+  SI_XIANG_SYMBOL_SUIT_HEARTS = 0x01200;
+  SI_XIANG_SYMBOL_SUIT_DIAMONDS = 0x01201;
+  SI_XIANG_SYMBOL_SUIT_CLUBS = 0x01202;
+  SI_XIANG_SYMBOL_SUIT_SPADES = 0x01203;
+
+  SI_XIANG_SYMBOL_SUN = 0x01204;
+  SI_XIANG_SYMBOL_EAGLE_GARUDA = 0x01205;
+  SI_XIANG_SYMBOL_ANTIQUE = 0x01206;
+  // noel
+  SI_XIANG_SYMBOL_CHRISMAS_GIFT = 0x01210;
+  SI_XIANG_SYMBOL_CHRISMAS_CANDY = 0x01211;
+  SI_XIANG_SYMBOL_CHRISMAS_RING = 0x01212;
+
+  SI_XIANG_SYMBOL_WILD = 0xffff;
+}
+
+message CollectSymbol {
+  SiXiangSymbol symbol = 1;
+  int64 qty = 2; // so luong
+  float ratio = 3;
+}
+
+enum SiXiangGame {
+  SI_XIANG_GAME_UNSPECIFIED = 0;
+  SI_XIANG_GAME_NORMAL = 1;
+  SI_XIANG_GAME_BONUS = 2;
+  SI_XIANG_GAME_DRAGON_PEARL = 3;
+  SI_XIANG_GAME_LUCKDRAW = 4;
+  SI_XIANG_GAME_GOLDPICK = 5;
+  SI_XIANG_GAME_RAPIDPAY = 6;
+  SI_XIANG_GAME_SIXANGBONUS = 7;
+  SI_XIANG_GAME_SIXANGBONUS_DRAGON_PEARL = 8;
+  SI_XIANG_GAME_SIXANGBONUS_LUCKDRAW = 9;
+  SI_XIANG_GAME_SIXANGBONUS_GOLDPICK = 10;
+  SI_XIANG_GAME_SIXANGBONUS_RAPIDPAY = 11;
+
+  /* Tazan game */
+  SI_XIANG_GAME_TARZAN_JUNGLE_TREASURE = 101;
+  SI_XIANG_GAME_TARZAN_FREESPINX9 = 102;
+  /* Juice Garden */
+
+  SI_XIANG_GAME_JUICE_NORMAL = 200;
+  SI_XIANG_GAME_JUICE_FRUIT_BASKET = 201;
+  SI_XIANG_GAME_JUICE_FRUIT_RAIN = 202;
+  SI_XIANG_GAME_JUICE_FREE_GAME = 203;
+
+  SI_XIANG_GAME_INCA_FREE_GAME = 301;
+  // SiXiangGame_SI_XIANG_GAME_NOEL_FREE_GAME = 301; 
+  // SiXiangGame_SI_XIANG_GAME_FRUIT_FREE_GAME = 301; 
+}
+
+enum BigWin {
+  BIG_WIN_UNSPECIFIED = 0;
+  BIG_WIN_NICE = 5;
+  BIG_WIN_HUGE = 10;
+  BIG_WIN_BIG = 25;
+  BIG_WIN_MEGA = 50;
+}
+
+enum WinJackpot {
+  WIN_JACKPOT_UNSPECIFIED = 0;
+  WIN_JACKPOT_MINOR = 10;
+  WIN_JACKPOT_MAJOR = 20;
+  WIN_JACKPOT_MEGA = 30;
+  WIN_JACKPOT_GRAND = 150;
+  WIN_JACKPOT_MINI = 1;
+}
+
+message JackpotReward {
+  WinJackpot win_jackpot = 1;
+  int64 ratio = 2;
+  int64 count = 3;
+  int64 chips = 4;
+  // tích lũy lịch sử chơi 
+  int64 chips_accum = 5;
+}
+message JackpotHistory {
+  JackpotReward minor = 1;
+  JackpotReward major = 2;
+  JackpotReward mega = 3;
+  JackpotReward grand = 4;
+  JackpotReward mini = 5;
+}
+
+message Payline {
+  int32 id = 1;
+  SiXiangSymbol symbol = 2;
+  int32 num_occur = 3;
+  double rate = 4;
+  int64 chips = 5;
+  /* Array contain index of symbol in matrix */
+  repeated int32 indices = 6;
+}
+
+message GameReward {
+  bool update_wallet = 1;
+  // số chip trong wallet trước spin
+  int64 balance_chips_wallet_before = 2;
+  // số chip trong wallet sau spin
+  int64 balance_chips_wallet_after = 3;
+  // tổng chip win trong 1 game
+  int64 chips_win = 4;
+  // vd trong game tarzan,
+  // chip ở đây sẽ là tổng chip trong 9 lần spin
+  int64 total_chips_win_by_game = 5;
+  // ngọc rừng xanh ở tarzan game
+  bool update_chips_bonus = 6;
+  // int64 chips_bonus = 7;
+  // save ratio win in some case
+  float ratio_win = 8;
+  int64 line_win = 9;
+  float total_ratio_win = 10;
+  int64 total_line_win = 11;
+  int64 chip_bet_fee = 12;
+  int64 chip_fee = 13;
+  // ratio bonus like tarzan payline cross freespin
+  float ratio_bonus = 14;
+  // tarzan PerlGreenForest
+  int32 perl_green_forest = 15;
+  int64 perl_green_forest_chips = 16;
+  int64 perl_green_forest_chips_collect = 17;
+}
+
+message SaveGame {
+  int64 last_update_unix = 1;
+  string data = 2;
+}

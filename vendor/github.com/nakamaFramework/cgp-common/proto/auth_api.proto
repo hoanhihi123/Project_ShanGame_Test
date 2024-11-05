@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+// The realtime protocol for the template match engine.
+package api;
+
+option go_package = "github.com/nakamaFramework/cgp-bing-module/api";
+
+message ChangePasswordRequest {
+  string old_password = 1;
+  string password = 2;
+}
+
+message RegisterRequest {
+  string user_name = 1;
+  string password = 2;
+}
+
+message Profile {
+  string user_id = 1;
+  string user_name = 2;
+  string display_name = 3;
+  string avatar_url = 4;
+  string status = 5;
+  int64 account_chip = 6;
+  int64 bank_chip = 7;
+  string ref_code = 8;
+  string lang_tag = 9;
+  string link_group = 10;
+  string link_fanpage_fb = 11;
+  string app_config = 12;
+  string avatar_id = 13;
+  bool registrable = 14;
+  int64 vip_level = 15;
+  int64 last_online_time_unix = 16;
+  int64 create_time_unix = 17;
+  int64 remain_time_input_ref_code = 18;
+  repeated LangCode lang_availables = 19;
+  PlayingMatch playing_match = 20;
+  string device_id = 21;
+  string last_device_id = 22;
+  string ref_game = 23;
+  string current_ip = 24;
+  int64 vip_point = 25;
+  bool is_online = 26;
+  bool is_banned = 27;
+  int64 last_login_unix = 28;
+  int64 user_sid = 29;
+}
+
+message PlayingMatch {
+  string code = 1;
+  string match_id = 2;
+  int64 leave_time = 3;
+  int64 mcb=4;
+  int64 bet=5;
+}
+
+message ListProfile {
+  repeated Profile profiles = 1;
+}
+
+message SimpleProfile {
+  string user_id = 1;
+  string user_name = 2;
+  string display_name = 3;
+  string status = 4;
+  int64 account_chip = 5;
+  string avatar_id = 6;
+  int64 vip_level = 7;
+  PlayingMatch playing_match = 8;
+  int64 user_sid = 9;
+}
+
+message ListSimpleProfile {
+  repeated SimpleProfile profiles = 1;
+}
+
+message QuickChatUpdateRequest {
+  repeated string texts = 1;
+}
+
+message QuickChatResponse {
+  repeated string texts = 1;
+}
+
+message LangCode {
+  string iso_code = 1;
+  string display_name = 2;
+  string source_url = 3;
+}

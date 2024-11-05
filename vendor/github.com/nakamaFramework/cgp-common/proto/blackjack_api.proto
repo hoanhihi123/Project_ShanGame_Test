@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/nakamaFramework/cgp-bing-module/api";
+
+import "chinese_poker_game_api.proto";
+import "common_api.proto";
+// status for each hand, user can have maximum 2 hand ( by spliting )
+enum BlackjackHandType {
+  BLACKJACK_HAND_TYPE_UNSPECIFIED = 0;
+  BLACKJACK_HAND_TYPE_BUSTED = 1;
+  BLACKJACK_HAND_TYPE_NORMAL = 2;
+  BLACKJACK_HAND_TYPE_21P = 3;
+  BLACKJACK_HAND_TYPE_BLACKJACK = 4;
+}
+
+enum BlackjackActionCode {
+  BLACKJACK_ACTION_UNSPECIFIED = 0;
+  BLACKJACK_ACTION_STAY = 1;
+  BLACKJACK_ACTION_HIT = 2;
+  BLACKJACK_ACTION_DOUBLE = 3;
+  BLACKJACK_ACTION_SPLIT = 4;
+  BLACKJACK_ACTION_INSURANCE = 5;
+}
+
+enum BlackjackBetCode {
+  BLACKJACK_BET_NORMAL = 0;
+  BLACKJACK_BET_REBET = 1;
+  BLACKJACK_BET_DOUBLE =2;
+}
+
+enum BlackjackPlayerType {
+  BLACKJACK_PLAYER = 0;
+  BLACKJACK_BANKER = 1;
+}
+
+enum BlackjackHandN0 {
+  BLACKJACK_HAND_UNSPECIFIED = 0;
+  BLACKJACK_HAND_1ST = 1;
+  BLACKJACK_HAND_2ND = 2;
+}
+
+message BlackjackAction {
+  string user_id = 1;
+  BlackjackActionCode code  = 2;
+}
+
+message BlackjackBet {
+  string user_id = 1;
+  int64 chips = 2;
+  BlackjackBetCode code = 3;
+}
+
+// is_win: -1 -> lost, 1 -> win, 0 -> tie
+message BlackjackBetResult {
+  int64 bet_amount = 1;
+  int64 win_amount = 2;
+  int64 total = 3;
+  int32 is_win = 4;
+}
+
+message BlackjackPlayerBet {
+  string user_id = 1;
+  int64 insurance = 2;
+  int64 first = 3;
+  int64 second = 4;
+  BalanceUpdate balance  = 14;
+}
+
+message BlackjackPLayerBetResult {
+  string user_id = 1;
+  BlackjackBetResult insurance = 2;
+  BlackjackBetResult first = 3;
+  BlackjackBetResult second = 4;
+}
+
+// when is_banker=true, no user_id is send along
+// if is_reveal_banker_hidden_card, only all_cards is send along
+message BlackjackUpdateDeal {
+  bool is_banker = 1;
+  bool is_reveal_banker_hidden_card = 2;
+  string user_id = 3;
+  BlackjackHandN0 hand_n0 = 4;
+  repeated Card new_cards = 5;
+  BlackjackPlayerHand hand = 6;
+  repeated BlackjackPlayerHand all_player_hand = 7; // only send when user rejoin table, use it to restore the game state, one with userId = "" is banker
+}
+
+message BlackjackLegalActions {
+  string user_id = 1;
+  repeated BlackjackActionCode actions = 2;
+}
+
+message BlackjackHand {
+  repeated Card cards = 1;
+  BlackjackHandType type = 2;
+  int32 point = 3;
+  string point_card_a = 4;
+  int32 min_point = 5;
+  int32 max_point = 6;
+}
+
+message BlackjackPlayerHand {
+  string user_id = 1;
+  BlackjackHand first = 2;
+  BlackjackHand second = 3;
+}
+
+// case player have 2 hands then hand <- 0|1 else 0
+message BlackjackPlayerTurn {
+  string is_player = 1;
+  string user_id = 2;
+  BlackjackHandN0 hand_n0 = 3;
+}
+
+message BlackjackUpdateDesk {
+  bool is_insurance_turn_enter = 1;
+  bool is_new_turn = 2;
+  string in_turn = 3;
+  BlackjackHandN0 hand_N0 = 4;
+  bool is_update_bet = 5;
+  BlackjackPlayerBet bet = 6;
+  bool is_update_legal_action = 7;
+  BlackjackLegalActions actions = 8;
+  bool is_split_hand = 9;
+  BlackjackPlayerHand hand = 10;
+  bool is_banker_not_blackjack = 11;
+  repeated BlackjackPlayerBet players_bet = 12;
+  Error error = 13;
+}
+
+message BlackjackUpdateFinish {
+  repeated BlackjackPLayerBetResult bet_results = 1;
+}

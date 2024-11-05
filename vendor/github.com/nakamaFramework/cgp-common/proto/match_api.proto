@@ -1,0 +1,135 @@
+// Copyright 2020 The Nakama Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+// The realtime protocol for the template match engine.
+package api;
+
+import "auth_api.proto";
+import "chinese_poker_game_api.proto";
+
+option go_package = "github.com/nakamaFramework/cgp-bing-module/api";
+// The complete set of rpc used for communication between clients and server.
+enum RPCCode {
+  // No opcode specified. Unused.
+  RPC_FIND_MATCH = 0;
+  RPC_CREATE_MATCH = 1;
+}
+
+// Payload for an RPC request to find a match.
+message RpcFindMatchRequest {
+  // User can choose a fast or normal speed match.
+  int32 mark_unit = 1;
+  string game_code = 2;
+  bool with_non_open = 3;
+  bool create = 4;
+  int32 mock_code_card = 5;
+  string user_data = 6;
+  int64 last_bet = 7;
+  string password = 8;
+  string table_id = 9;
+}
+
+message Match {
+  string match_id = 1;
+  int32 size = 2;
+  int32 max_size = 3;
+  string name = 4;
+  int32 mark_unit = 5;
+  bool open = 6;
+  int32 mock_code_card = 7;
+  string user_data = 8;
+  int64 last_bet = 9;
+  Profile user_created = 10;
+  string table_id = 11;
+  int32 num_bot = 12;
+  string password = 13;
+  // repeated string players = 14;
+  repeated SimpleProfile profiles = 15;
+  Bet bet = 16;
+  GameState game_state = 17;
+  repeated string playing_players = 18;
+  map<int32,int32> game_state_duration = 19;
+  int64 pot = 20;
+}
+
+message MatchInfoRequest {
+  string match_id = 1;
+  bool query_user = 2;
+  bool no_cache = 3;
+}
+// Payload for an RPC response containing match IDs the user can join.
+message RpcFindMatchResponse {
+  // One or more matches that fit the user's request.
+  repeated Match matches = 1;
+}
+
+// Payload for an RPC request to find a match.
+message RpcCreateMatchRequest {
+  int32 mark_unit = 1;
+  string game_code = 2;
+  string name = 3;
+  string password = 4;
+  int64 last_bet = 5;
+  int64 max_size = 6;
+  string custom_data = 7;
+}
+
+// Payload for an RPC response containing match IDs the user can join.
+message RpcCreateMatchResponse {
+  // One or more matches that fit the user's request.
+  string match_id = 1;
+}
+
+
+enum BetDisableType {
+  BET_DISABLE_TYPE_UNSPECIFIED = 0;
+  BET_DISABLE_TYPE_NOT_ENOUGH_CHIP = 1;
+  BET_DISABLE_TYPE_BELOW_MIN_VIP = 2;
+  BET_DISABLE_TYPE_ABOVE_MAX_VIP = 3;
+}
+message Bet {
+  int64 id = 1;
+  bool enable = 2;
+  float mark_unit = 3; // mức cược (chip)
+  int64 game_id = 4;
+  float x_join = 5;
+  int64 ag_join = 6;
+  float x_play_now = 7;
+  int64 ag_play_now = 8;
+  float x_leave = 9;
+  int64 ag_leave = 10;
+  float x_fee = 11;
+  int64 ag_fee = 12;
+  float new_fee = 13;
+  int64 count_playing = 14;
+  int64 min_vip = 15;
+  int64 max_vip = 16;
+  BetDisableType bet_disable_type = 17;
+}
+
+message Bets {
+  repeated Bet bets = 1;
+  int64 total = 2;
+  int64 offset = 3;
+  int64 limit = 4;
+  Bet best_choice = 5;
+}
+
+message BetRequest {
+  int64 game_id = 1;
+  int64 offset = 2;
+  int64 limit = 3;
+}

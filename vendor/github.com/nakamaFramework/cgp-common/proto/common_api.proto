@@ -1,0 +1,505 @@
+// Copyright 2020 The Nakama Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+// The realtime protocol for the template match engine.
+package api;
+
+option go_package = "github.com/nakamaFramework/cgp-bing-module/api";
+
+message Game {
+  string code = 1;
+  bool active = 2;
+  string lobby_id = 3;
+  Layout layout = 4;
+  int64 id = 5;
+}
+
+message Layout {
+  int32 col = 1;
+  int32 row = 2;
+  int32 col_span = 3;
+  int32 row_span = 4;
+}
+
+message GameListResponse { repeated Game games = 1; }
+
+message BetListRequest { string code = 1; }
+
+message BetListResponse { repeated int32 bets = 1; }
+
+enum TypeChat {
+  TYPE_CHAT_UNSPECIFIED = 0;
+  TYPE_CHAT_ROOM = 1;
+  TYPE_CHAT_DIRECTMSG = 2;
+  TYPE_CHAT_GROUUP = 3;
+}
+
+message Chat {
+  TypeChat type_chat = 1;
+  string id = 2;
+  string content = 3;
+}
+
+message FreeChip {
+  int64 id = 1;
+  string sender_id = 2;
+  string recipient_id = 3;
+  string title = 4;
+  string content = 5;
+  int64 chips = 6;
+  bool claimable = 7;
+  string action = 8;
+  int64 claim_time_unix = 9;
+  enum ClaimStatus {
+    CLAIM_STATUS_UNSPECIFIED = 0;
+    CLAIM_STATUS_WAIT_ADMIN_ACCEPT = 1;
+    CLAIM_STATUS_WAIT_USER_CLAIM = 2;
+    CLAIM_STATUS_CLAIMED = 3;
+    CLAIM_STATUS_REJECT = 4;
+  }
+  ClaimStatus claim_staus = 10;
+}
+
+message FreeChipRequest {
+  string user_id = 1;
+  int64 limit = 2;
+  string cusor = 3;
+  FreeChip.ClaimStatus claim_staus = 4;
+}
+
+message ListFreeChip {
+  repeated FreeChip freechips = 1;
+  string next_cusor = 2;
+  string prev_cusor = 3;
+  int64 total = 4;
+  int64 offset = 5;
+  int64 limit = 6;
+}
+
+message Deal {
+  string id = 1;
+  int64 chips = 2;
+  int64 amount_chips = 3;
+  int64 bonus = 4;
+  string price = 5;
+  string name = 6;
+  string currency = 7;
+  string percent = 8;
+  int64 chip_per_unit = 9;
+}
+
+message DealInShop {
+  Deal best = 1;
+  repeated Deal iaps = 2;
+  repeated Deal gcashes = 3;
+  repeated Deal sms = 4;
+}
+
+message LeaderBoardRecord {
+  string game_code = 1;
+  string user_id = 2;
+  int64 score = 3;
+  int64 cd_reset_unix = 4;
+}
+
+enum ExchangeStatus {
+  EXCHANGE_STATUS_UNSPECIFIED = 0;
+  EXCHANGE_STATUS_WAITING = 1;
+  EXCHANGE_STATUS_CANCEL_BY_USER = 2;
+  EXCHANGE_STATUS_PENDING = 3;
+  EXCHANGE_STATUS_DONE = 4;
+  EXCHANGE_STATUS_REJECT = 5;
+}
+
+message ExchangeInfo {
+  string id = 1;
+  string id_deal = 2;
+  int64 chips = 3;
+  string price = 4;
+  int64 status = 5;
+  int32 unlock = 6;
+  string cash_id = 7;
+  string cash_type = 8;
+  string user_id_request = 9;
+  string user_name_request = 10;
+  int64 vip_lv = 11;
+  string device_id = 12;
+  string user_id_handling = 13;
+  string user_name_handling = 14;
+  string reason = 15;
+  string cursor = 16;
+  int64 createTime = 17;
+}
+
+message ExchangeDealInShop { repeated Deal gcashes = 1; }
+
+message ListExchangeInfo {
+  repeated ExchangeInfo exchange_infos = 1;
+  string next_cusor = 2;
+  string prev_cusor = 3;
+  int64 total = 4;
+  int64 offset = 5;
+  int64 limit = 6;
+  int64 from = 7;
+  int64 to = 8;
+}
+
+message ExchangeRequest {
+  string id = 1;
+  string user_id_request = 2;
+  int64 limit = 3;
+  int64 from = 4;
+  int64 to = 5;
+  string cusor = 6;
+  string cash_type = 9;
+}
+
+message Reward {
+  int64 basic_chip = 1;
+  float percent_bonus = 2;
+  int64 bonus_chip = 3;
+  int64 online_chip = 4;
+  int64 total_chip = 5;
+  int64 streak = 6;
+  int64 online_sec = 7;
+  bool can_claim = 8;
+  int64 num_claim = 9;
+  int64 last_claim_unix = 10;
+  int64 next_claim_unix = 11;
+  int64 next_claim_sec = 12;
+  bool reach_max_streak = 13;
+  int64 last_spin_number = 14;
+  int64 last_online_unix = 15;
+}
+
+message RewardTemplate {
+  repeated int64 basic_chips = 1;
+  float percen_bonus = 2;
+  int64 online_sec = 3;
+  int64 online_chip = 4;
+  int64 streak = 5;
+}
+
+message LastClaimReward {
+  int64 last_claim_unix = 1;
+  int64 next_claim_unix = 2;
+  int64 streak = 3;
+  int64 last_spin_number = 4;
+  bool reach_max_streak = 5;
+  int64 num_claim = 6;
+}
+
+message DailyRewardTemplate { repeated RewardTemplate reward_templates = 1; }
+
+message UserGroup {
+  int64 id = 1;
+  string name = 2;
+}
+
+message ListUserGroup {
+  repeated UserGroup user_groups = 1;
+  string next_cusor = 2;
+  string prev_cusor = 3;
+  int64 total = 4;
+  int64 offset = 5;
+  int64 limit = 6;
+}
+
+message UserGroupRequest {
+  int64 limit = 1;
+  string cusor = 2;
+}
+
+enum GiftCodeType {
+  GIFT_CODE_TYPE_UNSPECIFIED = 0;
+  GIFT_CODE_TYPE_GAME = 1;
+}
+
+enum GiftCodeError {
+  GIFT_CODE_ERROR_UNSPECIFIED = 0;
+  GIFT_CODE_ERROR_NOT_OPEN = 1;
+  GIFT_CODE_ERROR_HAS_CLOSED = 2;
+  GIFT_CODE_ERROR_REACH_MAX_CLAIMED = 3;
+  GIFT_CODE_ERROR_ALREADY_CLAIMED = 4;
+  GIFT_CODE_ERROR_LV_VIP_NOT_MEET_REQUIRE = 5;
+}
+
+message GiftCode {
+  int64 id = 1;
+  string code = 2;
+  int64 n_current = 3;
+  int64 n_max = 4;
+  int64 value = 5;
+  int64 start_time_unix = 6;
+  int64 end_time_unix = 7;
+  string message = 8;
+  int64 vip = 9;
+  GiftCodeType gift_code_type = 10;
+  bool reach_max_claim = 12;
+  bool already_claim = 13;
+  string user_id = 14;
+  bool open_to_claim = 15;
+  int32 err_code = 16;
+}
+
+message ListGiftCode {
+  repeated GiftCode gift_codes = 1;
+  int64 total = 2;
+  int64 offset = 3;
+  int64 limit = 4;
+}
+
+enum TypeNotification {
+  RESERVED = 0;
+  MAIL_BOX = 1;
+  GIFT = 2;
+}
+
+message AddNotificationRequest {
+  repeated string recipient_ids = 1;
+  int64 user_group_id = 2;
+  TypeNotification type = 3;
+  string title = 4;
+  string content = 5;
+  string sender_id = 6;
+}
+
+message Notification {
+  int64 id = 1;
+  string recipient_id = 2;
+  TypeNotification type = 3;
+  string title = 4;
+  string content = 5;
+  string sender_id = 6;
+  bool read = 7;
+  int64 create_time_unix = 8;
+  string app_package = 9;
+  string game_id = 10;
+}
+
+message NotificationRequest {
+  int64 limit = 1;
+  string cusor = 2;
+  TypeNotification type = 3;
+}
+
+message ListNotification {
+  repeated Notification notifications = 1;
+  string next_cusor = 2;
+  string prev_cusor = 3;
+  int64 total = 4;
+  int64 offset = 5;
+  int64 limit = 6;
+}
+
+enum TypeInAppMessage {
+  HOT_NEWS = 0;
+  BANNER = 1;
+}
+
+enum InAppMessageAction {
+  NONE = 0;
+  NAVIGATE = 1;
+  OPEN_URL = 2;
+}
+
+message RangeTime {
+  int32 from = 1;
+  int32 to = 2;
+}
+
+message InAppMessageData {
+  InAppMessageAction action = 1;
+  string target = 2;
+  map<string, string> params = 3;
+  repeated RangeTime showTimes = 4;
+}
+
+message InAppMessage {
+  int64 id = 1;
+  int64 high_priority = 2;
+  repeated int64 group_ids = 3;
+  TypeInAppMessage type = 4;
+  InAppMessageData data = 5;
+  int64 start_date = 6;
+  int64 end_date = 7;
+  int64 create_time_unix = 8;
+  string app_package = 9;
+  string game_id = 10;
+}
+
+message InAppMessageRequest {
+  int64 limit = 1;
+  string cusor = 2;
+  TypeInAppMessage type = 3;
+}
+
+message ListInAppMessage {
+  repeated InAppMessage in_app_messages = 1;
+  string next_cusor = 2;
+  string prev_cusor = 3;
+  int64 total = 4;
+  int64 offset = 5;
+  int64 limit = 6;
+}
+
+message DefaultResponse {
+  string message = 1;
+  string code = 2;
+  string status = 3;
+}
+
+message PreSignPutRequest {
+  string fileName = 1;
+  string bucketName = 2;
+}
+
+message PreSignPutResponse { string url = 1; }
+
+message ReferUser {
+  int64 id = 1;
+  string user_invitor = 2;
+  string user_invitee = 3;
+  int64 create_time_unix = 4;
+}
+
+message RewardReferTemplate {
+  int64 min = 1;
+  int64 max = 2;
+  float rate = 3;
+}
+
+message ListRewardReferTemplate {
+  repeated RewardReferTemplate reward_refers = 1;
+}
+
+message RewardRefer {
+  int64 id = 1;
+  string user_id = 2;
+  int64 win_amt = 3;
+  int64 est_reward_lv = 4;
+  int64 est_reward = 5;
+  float est_rate_reward = 6;
+  repeated RewardRefer user_refers = 7;
+  repeated RewardReferTemplate list_rewards = 8;
+  int64 from_unix = 9;
+  int64 to_unix = 10;
+  int64 total_user_refer = 11;
+  int64 update_time_unix = 12;
+  bool send_to_wallet = 13;
+  int64 create_time_unix = 14;
+  int64 remain_time_reset_sec = 15;
+}
+
+message ListRewardRefer { repeated RewardRefer user_refers = 1; }
+
+enum HistoryRewardTime {
+  HISTORY_REWARD_TIME_UNSPECIFIED = 0;
+  HISTORY_REWARD_TIME_THIS_WEEK = 1;
+  HISTORY_REWARD_TIME_LAST_WEEK = 2;
+  HISTORY_REWARD_TIME_THIS_MONTH = 3;
+  HISTORY_REWARD_TIME_LAST_MONTH = 4;
+}
+
+message HistoryRewardRequest {
+  string user_id = 1;
+  HistoryRewardTime time = 2;
+  int64 from = 3;
+  int64 to = 4;
+}
+
+message WalletTransRequest {
+  int64 limit = 1;
+  string cusor = 2;
+  string meta_action = 3;
+  string meta_bank_action = 4;
+}
+
+enum ErrorType {
+  ERROR_TYPE_UNSPECIFIED = 0;
+  ERROR_TYPE_CHIP_NOT_ENOUGH = 1;
+}
+
+message Error {
+  int64 code = 1;
+  string error = 2;
+  ErrorType error_type = 3;
+}
+
+message Request {
+  string user_id = 1;
+  string body = 2;
+}
+
+message Response {
+  string body = 1;
+  string error_message = 2;
+}
+
+message UserMeta {
+  string user_id = 1;
+  int32 vip = 2;
+  int64 total_chips_topup =
+      3; // Tổng số tiền user đã nạp tính từ lúc tạo account
+  int64 total_chips_cashout =
+      4; // Tổng gá trị user đã rút tính từ lúc tạo account
+  int64 total_chips_send = 5; // Tổng gá trị user đã chuyển đi cho người khác
+  int64 agPlay = 6; // Số chip user đang có trên người + Số chip đang có trong
+                    // free chip mà user chưa nhận
+  int64 agBank = 7; //  Số chip user đang có trong Bank + Số chip đã chuyển đi
+                    //  cho người khác
+  int64 total_chips_cashout_inday = 8; // Tổng số tiền user đã rút trong ngày
+}
+
+// message RuleLucky {
+//   int64 id = 1;
+//   string game_code = 2;
+//   float co_rate_min = 3;
+//   float co_rate_max = 4;
+//   float ci_min = 5;
+//   float ci_max = 6;
+//   float co_inday_min = 7;
+//   float co_inday_max = 8;
+//   int64 base_1 = 9;
+//   int64 base_2 = 10;
+//   int64 base_3 = 11;
+//   int64 base_4 = 12;
+//   int64 emit_event_at_unix = 13;
+//   int64 deleted_at = 14;
+// }
+
+message Range {
+  int64 min = 1;
+  int64 max = 2;
+}
+message RuleLucky {
+  int64 id = 1;
+  int64 deleted_at = 2;
+  int64 emit_event_at_unix = 3;
+  string game_code = 4;
+  Range rtp = 5;
+  Range mark = 6;
+  Range vip = 7;
+  int64 re_deal = 8;
+  Range win_mark_ratio = 9;
+}
+
+message RulesLucky {
+  repeated RuleLucky rules = 1;
+  int64 limit = 2;
+  int64 offset = 3;
+  int64 total = 4;
+}

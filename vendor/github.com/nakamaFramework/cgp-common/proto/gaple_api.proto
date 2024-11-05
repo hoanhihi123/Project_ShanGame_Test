@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package api;
+
+import "bandarqq_api.proto";
+import "chinese_poker_game_api.proto";
+
+option go_package = "github.com/nakamaFramework/cgp-bing-module/api";
+
+// import "chinese_poker_game_api.proto";
+
+enum GapleDominoChainPosition {
+  GAPLE_DOMINO_CHAIN_POSITION_GAPLE_DOMINO_CHAIN_UNSPECIFIED = 0;
+  GAPLE_DOMINO_CHAIN_POSITION_GAPLE_DOMINO_CHAIN_HEAD = 1;
+  GAPLE_DOMINO_CHAIN_POSITION_GAPLE_DOMINO_CHAIN_TAIL = 2;
+  GAPLE_DOMINO_CHAIN_POSITION_GAPLE_DOMINO_CHAIN_BOTH =
+      3; // server->client indicate possible action
+}
+
+message GapleDominoAction {
+  string user_id = 1;
+  Domino domino = 2;
+  GapleDominoChainPosition position = 3;
+}
+
+message GapleDominoPenalty {
+  string gain_player = 1;
+  string lost_player = 2;
+  int32 chips = 3;
+  repeated int32 lost_player_not_have_facelets = 4;
+  BalanceUpdate gain_player_wallet = 5;
+  BalanceUpdate lost_player_wallet = 6;
+}
+
+message GapleDominoChainNode {
+  Domino domino = 1;
+  int32 turn_number = 2;
+}
+
+// note: when user that was disconnected reenter the table and that game not yet
+// ended server will:
+//  - send the hand cards to client
+//  - send update desk that CONTAINS CHAIN BUT NOT HAVE ACTION like normal would
+//  do
+message GapleDominoUpdateDesk {
+  int32 n_players = 1;
+  bool is_new_turn = 2;
+  bool is_update_chain = 3;
+  bool is_append_domino_to_chain = 4;
+  bool is_penalty_occur = 5;
+  bool is_update_legal_actions = 6;
+  bool is_update_num_remained_card = 7;
+  repeated GapleDominoChainNode chain = 8; // update entire chain on tables
+  GapleDominoAction action = 9; //  last piece of domino, adding it to the table
+  //  chain in correspond chain's end
+  repeated GapleDominoAction legal_actions =
+      10; // for displaying playable cards
+  GapleDominoPenalty penalty = 11;
+  repeated GapleDominoPresenceNumRemained remaineds = 12;
+  string in_turn = 13; // uid of player in current turn
+  repeated int32 remained_facelets_count =
+      14; // count facelets remained on all players hand
+}
+
+message GapleDominoPresenceNumRemained {
+  string user_id = 1;
+  int32 num_card = 2;
+}
+
+message GapleDominoPresenceHand {
+  string user_id = 1;
+  repeated Domino dominos = 2;
+}
+
+// server->client at the beginning of the game, also when a disconnected player
+// reenter
+message GapleDominoUpdateDeal {
+  GapleDominoPresenceHand hand = 1;
+  GapleDominoUpdateDesk desk = 2;
+}
+
+enum GapleDominoFinishGameType {
+  GAPLE_DOMINO_FINISH_GAME_TYPE_GAPLE_DOMINO_FINISHGAME_TYPE_UNSPECIFIED = 0;
+  GAPLE_DOMINO_FINISH_GAME_TYPE_GAPLE_DOMINO_FINISHGAME_TYPE_SINGLE = 1;
+  GAPLE_DOMINO_FINISH_GAME_TYPE_GAPLE_DOMINO_FINISHGAME_TYPE_DOUBLE = 2;
+  GAPLE_DOMINO_FINISH_GAME_TYPE_GAPLE_DOMINO_FINISHGAME_TYPE_TRIPLE = 3;
+  GAPLE_DOMINO_FINISH_GAME_TYPE_GAPLE_DOMINO_FINISHGAME_TYPE_QUARTET = 4;
+  GAPLE_DOMINO_FINISH_GAME_TYPE_GAPLE_DOMINO_FINISHGAME_TYPE_QUINTET = 5;
+}
+
+message LewatCount {
+  string user_id = 1;
+  int32 count = 2;
+}
+
+message ResultChip {
+  string user_id = 1;
+  int64 balance_change = 2;
+}
+
+message GapleDoninoUpdateFinish {
+  GapleDominoFinishGameType type = 1;
+  string winner = 2;
+  repeated GapleDominoPresenceHand hands = 3;
+  repeated LewatCount lewats = 4;
+  repeated ResultChip result = 5;
+}

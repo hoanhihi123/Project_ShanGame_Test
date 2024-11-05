@@ -1,0 +1,109 @@
+syntax = "proto3";
+
+package api;
+
+import "chinese_poker_game_api.proto";
+
+option go_package = "github.com/nakamaFramework/cgp-bing-module/api";
+
+enum DragonTigerBetCell {
+  CELL_UNSPECIFIED = 0; // unuse
+  CELL_DRAGON = 1;
+  CELL_TIGER = 2;
+  CELL_TIE = 3;
+  CELL_DRAGON_SMALL = 4;
+  CELL_DRAGON_BIG = 5;
+  CELL_TIGER_SMALL = 6;
+  CELL_TIGER_BIG = 7;
+}
+
+message DragonTigerBet {
+  int64 chips = 2;
+  DragonTigerBetCell cell = 3;
+}
+
+message DragonTigerBetResult {
+  DragonTigerBet bet = 1;
+  bool is_win = 2;
+}
+
+// client->server when user request bet
+// if action_type is RE_BET or DOUBLE_BET, set "bets" as an empty array
+message DragonTigerPlayerBets {
+  string user_id = 1;
+  DragonTigerBetAction action_type = 2;
+  repeated DragonTigerBet bets = 3;
+}
+
+message DragonTigerPlayerBetResult {
+  string user_id = 1;
+  repeated DragonTigerBetResult list = 2;
+}
+
+message DragonTigerDeskCell {
+  DragonTigerBetCell cell = 1;
+  int64 chips = 2;
+  int32 n_user_bet = 3;
+}
+
+message DragonTigerListDeskCell {
+  repeated DragonTigerDeskCell list = 1;
+}
+
+message DragonTigerHand {
+  Card dragon = 1;
+  Card tiger = 2;
+}
+
+// send from server to client upon game finished
+message DragonTigerGameFinish {
+  DragonTigerHand hand = 1;
+  repeated DragonTigerBetCell win_cells = 3;
+  repeated DragonTigerPlayerBetResult list_bet_result = 4;
+}
+
+// OPCODE_REQUEST_HISTORY_RESULT
+// server->client when request previous games history
+message DragonTigerHistory {
+  repeated DragonTigerHand histories = 1;
+}
+
+// unused
+message DragonTigerPlayer {
+  string user_name = 2;
+  int64 vip_level = 4;
+  string avatar_id = 5;
+  int64 chips = 6;
+}
+
+// OPCODE_UPDATE_TABLE
+// server->client when game state changed
+message DragonTigerUpdateTable {
+  GameState game_state = 1;
+  int64 count_down = 2;
+  int32 n_player = 3; // unused
+  repeated DragonTigerPlayer notable_players = 4; // unused
+}
+
+// server->client when there's a change in table
+message DragonTigerUpdateDesk {
+  int32 n_players = 1;
+  bool is_update_user_bet = 2;
+  bool is_update_desk_cell = 3;
+  bool is_update_game_history = 4;
+  DragonTigerPlayerBets user_bet = 5;
+  DragonTigerListDeskCell desk_cell = 6;
+  DragonTigerHistory history = 7;
+}
+
+enum DragonTigerBetAction {
+  NORMAL_BET = 0;
+  RE_BET = 1;
+  DOUBLE_BET = 2;
+}
+
+// server->client when user bet action is illegal
+// OPCODE_UPDATE_REJECTED
+message DragonTigerActionReject {
+  string reason = 1;
+}

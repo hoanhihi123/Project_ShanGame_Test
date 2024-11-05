@@ -1,0 +1,433 @@
+syntax = "proto3";
+
+package api;
+
+import "auth_api.proto";
+
+option go_package = "github.com/nakamaFramework/cgp-bing-module/api";
+
+message OpPlayer {
+  string user_id = 1;
+  string user_name = 2;
+  int64 game_id = 3;
+  string game_name = 4;
+  int64 no_bet = 5;
+  int64 no_win = 6;
+  int64 no_lost = 7;
+  uint64 chip_win = 8;
+  uint64 chip_win_prefee = 9;
+  uint64 chip_lost = 10;
+  int64 chip_balance = 11;
+  int64 action = 12;
+  string status = 13;
+  int64 date_unix = 14;
+  int64 mcb = 15;
+  int64 user_sid = 16;
+}
+
+message OpPlayerRequest {
+  string user_id = 1;
+  int64 game_id = 2;
+  int64 from_unix = 3;
+  int64 to_unix = 4;
+  int64 action = 5;
+  int64 offset = 6;
+  int64 limit = 7;
+  int64 user_sid = 8;
+}
+
+message OpPlayerResponse {
+  repeated OpPlayer op_players = 1;
+  int64 total = 2;
+  int64 offset = 3;
+  int64 limit = 4;
+  uint64 total_chip_win = 5;
+  uint64 total_chip_lost = 6;
+}
+
+message MatchDetail {
+  int64 game_id = 1;
+  string game_name = 2;
+  int64 mcb = 3;
+  int64 num_match_played = 4;
+  uint64 chip_fee = 5;
+  string detail = 6;
+  int64 table_id = 7;
+  int64 date_unix = 8;
+  int64 created_at_unix = 9;
+  int64 chip_win = 10;
+  int64 chip_lose = 11;
+}
+
+message MatchDetailRequest {
+  int64 game_id = 1;
+  int64 from_unix = 2;
+  int64 to_unix = 3;
+  int64 user_sid = 4;
+  int64 user_pair_sid = 5;
+  int64 limit = 6;
+  int64 offset = 7;
+}
+
+message MatchDetailResponse {
+  repeated MatchDetail match_details = 1;
+  int64 total = 2;
+  int64 limit = 6;
+  int64 offset = 7;
+}
+
+message PlayerData {
+  string user_id = 1;
+  int64 chip = 2;
+  int64 chip_add = 3;
+  int64 user_sid = 8;
+  int64 chip_fee = 9;
+  int64 chip_add_prefee = 10;
+}
+
+message MatchData {
+  int64 game_id = 1;
+  string game_code = 3;
+  int64 mcb = 4;
+  int64 chip_fee = 5;
+  string match_id = 6;
+  string table_id = 7;
+}
+
+message OpReport {
+  repeated PlayerData player_data = 1;
+  MatchData match_data = 2;
+}
+
+message GoldStatistic {
+  int64 time_update_unix = 1;
+  int64 pay = 2;
+  int64 promotion = 3;
+  repeated MatchData match_data = 4;
+  int64 ag_cashout = 5;
+  int64 ag_bank = 6;
+  int64 chips = 7;
+}
+
+message GoldStatisticRequest {
+  int64 from_unix = 1;
+  int64 to_unix = 2;
+  int64 limit = 3;
+  int64 offset = 4;
+}
+
+message GoldStatisticResponse {
+  repeated GoldStatistic gold_statistics = 1;
+  int64 limit = 2;
+  int64 offset = 3;
+  int64 total = 4;
+}
+
+message UserStatistic {
+  int64 total_chip_deposit = 1;
+  int64 total_chip_with_draw = 2;
+  int64 total_chip_win = 3;
+  int64 total_chip_win_prefee = 4;
+  int64 total_chip_lose = 5;
+  int64 total_chip_promotion = 6;
+  int64 total_chip_send = 7;
+  int64 total_chip_recv = 8;
+  int64 co_ratio = 9;
+  int64 total_chip_deposit_3d = 10;
+  int64 total_chip_with_draw_3d = 11;
+  int64 luck = 12;
+  int64 user_create_time_unix = 13;
+  repeated UserStatGameHistory user_stat_game_histories = 14;
+  repeated UserTransferGoldStat recv_chip_stats = 15;
+  repeated UserTransferGoldStat send_chip_stats = 16;
+  string user_id = 17;
+}
+
+message UserStatisticRequest {
+  string user_id = 1;
+  int64 from_unix = 2;
+  int64 to_unix = 3;
+  int64 user_sid = 4;
+  string device_id = 5;
+}
+
+message UserStatGameHistory {
+  int64 game_id = 1;
+  string game_name = 2;
+  int64 total_chip_win = 3;
+  int64 total_chip_win_prefee = 4;
+  int64 total_chip_lost = 5;
+  int64 no_game_win = 6;
+  int64 no_game_lost = 7;
+  string user_id = 8;
+}
+
+message UserTransferGoldStat {
+  string user_send_id = 1;
+  string user_send_name = 2;
+  string user_recv_id = 3;
+  string user_recv_name = 4;
+  int64 chip = 5;
+}
+
+message UserInfo {
+  Profile profile = 1;
+  int64 total_in = 2;
+  int64 total_out = 3;
+}
+
+message UserInfoResponse {
+  repeated UserInfo user_infos = 1;
+  int64 total = 2;
+  string device_id = 3;
+  int64 total_in = 4;
+  int64 total_out = 5;
+  int64 total_lock = 6;
+}
+
+message CashOut {
+  string user_id = 1;
+  string user_name = 2;
+  int64 ci = 3;
+  int64 cio = 4;
+  int64 co = 5;
+  int64 coo = 6;
+  int64 lucky_percent = 7;
+  int64 user_sid = 8;
+}
+
+message TopCashOut {
+  repeated CashOut cashouts = 1;
+  int64 from_unix = 2;
+  int64 to_unix = 3;
+  int64 limit = 4;
+  int64 offset = 5;
+  int64 total = 6;
+}
+
+message Vip {
+  string user_id = 1;
+  string user_name = 2;
+  int64 cio = 3;
+  int64 total_chip = 4;
+  int64 last_login_time_unix = 5;
+  int64 created_time_unix = 6;
+  string ref_game = 7;
+  int64 ci = 8;
+  int64 co = 9;
+  int64 ci2d = 10;
+  int64 co2d = 11;
+  int64 lucky_percent = 12;
+  bool is_banned = 13;
+  bool is_online = 14;
+  int64 total_in = 15;
+  int64 total_out = 16;
+  int64 user_sid = 17;
+}
+
+message TopVip {
+  repeated Vip vips = 1;
+  int64 from_unix = 2;
+  int64 to_unix = 3;
+  int64 limit = 4;
+  int64 offset = 5;
+  string ref_game = 6;
+  int64 total = 7;
+}
+
+message Win {
+  string user_id = 1;
+  string user_name = 2;
+  int64 vip = 3;
+  int64 gold = 4;
+  int64 ag = 5;
+  int64 ag_win = 6;
+  int64 co = 7;
+  int64 ci = 8;
+  int64 co_rate = 9;
+  int64 lucky_percent = 10;
+  int64 user_sid = 11;
+}
+
+message TopWin {
+  repeated Win wins = 1;
+  int64 from_unix = 2;
+  int64 to_unix = 3;
+  int64 limit = 4;
+  int64 offset = 5;
+  string ref_game = 6;
+  int64 total = 7;
+  int64 game_id = 8;
+}
+
+message Lost {
+  string user_id = 1;
+  string user_name = 2;
+  int64 vip = 3;
+  int64 gold = 4;
+  int64 ag = 5;
+  int64 ag_lost = 6;
+  int64 co = 7;
+  int64 ci = 8;
+  int64 co_rate = 9;
+  int64 lucky_percent = 10;
+  int64 user_sid = 11;
+}
+
+message TopLost {
+  repeated Lost losts = 1;
+  int64 from_unix = 2;
+  int64 to_unix = 3;
+  int64 limit = 4;
+  int64 offset = 5;
+  string ref_game = 6;
+  int64 total = 7;
+  int64 game_id = 8;
+}
+
+message TransactionRequest {
+  int64 user_sid = 1;
+  int64 from_unix = 2;
+  int64 to_unix = 3;
+  int64 limit = 4;
+  int64 offset = 5;
+}
+
+message TransactionDetail {
+  string id = 1;
+  string user_id = 2;
+  int64 user_sid = 3;
+  string user_name = 4;
+  int64 vip = 5;
+  int64 rp = 6; // Số tiền nạp
+  string type_topup = 7;
+  int64 chips_topup = 8; // Số chip user được nhận của giao dịch
+  int64 created_unix = 9;
+}
+
+message TransactionResponse {
+  repeated TransactionDetail trans_details = 1;
+  int64 total_rp = 2;
+  int64 limit = 3;
+  int64 offset = 4;
+  int64 total = 5;
+}
+
+enum CurrencyUnitId {
+  CURRENCY_UNIT_ID_UNSPECIFIED = 0;
+  CURRENCY_UNIT_ID_VN = 1;
+}
+
+message IAPSummary {
+  int64 id = 1;
+  string user_id = 2;
+  int64 create_at_unix = 3;
+  int64 total_topup = 4;
+  int64 vip_point = 5;
+  int64 total_cashout = 6;
+  int64 vip = 7;
+  int64 currency_topup = 8;
+  int64 currency_cashout = 9;
+}
+
+message CashInfo {
+  int64 id = 1;
+  string user_id = 2;
+  int64 create_at_unix = 3;
+  int64 chips = 4;
+  int64 vip_point = 5;
+  int64 publisher = 6;
+  int64 currency = 7;
+  int64 currency_unit_id = 8; // vi_vn, en_us follow Locale name standard
+  string trans_id = 9;
+  int64 date_unix = 10;
+  int64 num_transaction = 11;
+  int64 currency_value = 12; // 10, 20, 30 ...
+  string currency_unit_name = 13;
+  map<int64, int64> num_trans_by_currency_value = 14;
+  int64 num_account_unique = 15;
+  int64 net_rev = 16;
+}
+
+message CashInfoRequest {
+  int64 from_unix = 1;
+  int64 to_unix = 2;
+  int64 limit = 3;
+  int64 offset = 4;
+  int64 publisher = 5;
+  CurrencyUnitId currency_id = 6;
+}
+
+message CashInfoResponse {
+  repeated CashInfo cashout_infos = 1;
+  int64 total_cash = 2;
+  int64 total_account = 3;
+  int64 avg_cash = 4;
+  int64 total_rev = 5;
+  int64 avg_rev = 6;
+}
+
+message UserGameCount {
+  int64 date_unix = 1;
+  int64 count_game = 2;
+}
+
+message UserGameStats {
+  string user_id = 1;
+  int64 game_no = 2;
+  repeated UserGameCount user_game_counts = 3;
+}
+
+message PaymentByVip {
+  int64 vip = 1;
+  int64 ci = 2;
+  int64 chips = 3;
+  int64 num_trans = 4;
+  int64 num_account = 5;
+}
+
+message PaymentsByVip {
+  repeated PaymentByVip payments = 1;
+  int64 from_unix = 2;
+  int64 to_unix = 3;
+}
+
+message CashoutByVip {
+  int64 vip = 1;
+  int64 co = 2;
+  int64 chips = 3;
+  int64 num_trans = 4;
+  int64 num_account = 5;
+}
+
+message CashoutsByVip {
+  repeated CashoutByVip cashouts = 1;
+  int64 from_unix = 2;
+  int64 to_unix = 3;
+}
+
+message VipStats {
+  int64 time_update_unix = 1;
+  int64 user_sid = 2;
+  string user_id = 3;
+  string user_name = 4;
+  int64 no_win = 5;
+  int64 no_lose = 6;
+  int64 chips_win = 7;
+  int64 chips_lose = 8;
+  int64 cash_in = 9;
+  int64 cash_in5 = 10;
+  int64 cash_in10 = 11;
+  int64 cash_out = 12;
+  int64 cash_out5 = 13;
+  int64 cash_out10 = 14;
+  int64 vip = 15;
+}
+
+message VipStatsReponse {
+  repeated VipStats vips_stats = 1;
+  int64 total = 2;
+  int64 from_unix = 3;
+  int64 limit = 4;
+  int64 offset = 5;
+}

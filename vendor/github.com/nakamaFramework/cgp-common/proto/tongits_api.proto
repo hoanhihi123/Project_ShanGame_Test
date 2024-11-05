@@ -1,0 +1,194 @@
+syntax = "proto3";
+
+option go_package = "github.com/nakamaFramework/tongits/api";
+
+enum Tongits_GameState {
+	Unknown    = 0;
+	Idle       = 1;
+	Matching   = 2;
+	Preparing  = 3;
+	Play       = 4;
+	DeclareTime    = 5;
+	Reward     = 6;
+  Fight_Response = 8;
+	Finish     = 7;
+}
+
+enum Tongits_CardSuit {
+  SUIT_UNSPECIFIED = 0;
+  SUIT_HEARTS = 1;
+  SUIT_DIAMONDS = 2;
+  SUIT_CLUBS = 3;
+  SUIT_SPADES = 4;
+}
+
+enum Tongits_CardRank {
+  RANK_UNSPECIFIED = 0;
+  RANK_A = 1;
+  RANK_2 = 2;
+  RANK_3 = 3;
+  RANK_4 = 4;
+  RANK_5 = 5;
+  RANK_6 = 6;
+  RANK_7 = 7;
+  RANK_8 = 8;
+  RANK_9 = 9;
+  RANK_10 = 10;
+  RANK_J = 11;
+  RANK_Q = 12;
+  RANK_K = 13;
+}
+
+message Tongits_Card {
+  Tongits_CardRank rank = 1;
+  Tongits_CardSuit suit = 2;
+}
+
+message TongitsPlayerHandCards {
+  string user_id = 1;
+  repeated Tongits_Card cards = 2;
+}
+
+message TongitsUpdateDeal {
+  TongitsPlayerHandCards hand = 1;
+  string currentTurn = 2;
+  int32 timeturn = 3;
+}
+
+message Pot{
+  int64 ag = 1;
+  string uidWinLastMatch = 2;
+}
+
+
+message Tongits_ListCard {
+  repeated Tongits_Card cards = 1;
+}
+
+message Tongits_ListSuit {
+  repeated Tongits_ListCard suits = 1;
+}
+
+message DisCard {
+  string user_id = 1;
+  Tongits_Card card = 2;
+  string nextTurn = 3;
+}
+
+message SendCard{
+  Tongits_ListCard cardsFrom = 1;
+  Tongits_ListCard cardsTo = 2;
+  string toUserId = 3;
+  string userId = 4;
+}
+
+message HitCard{
+  Tongits_ListCard cards = 2;
+  string userid = 3;
+}
+
+message ShowSuit{
+  Tongits_ListCard suit = 2;
+  string userid = 3;
+}
+
+message TakeCard{
+  string userid = 1;
+  Tongits_Card card = 2;
+}
+
+message StartDeclareNoti{
+  float timeout = 1;
+}
+
+message PlayerDeclare{
+  string userid = 1;
+  bool  isSuccess = 2;
+}
+
+enum Tongits_OpCodeUpdate {
+  UNDEFINE= 0; //message UpdateTable
+  UPDATE_TABLE = 1; //message UpdateTable
+  DEAL = 2; //message chia bai
+  FINISH = 3; //message UpdateFinish
+  TONGITS = 4; // khi user duoc tongits
+  UPDATE_GAME_STATE = 5;
+  UPDATE_WALLET = 7;
+  KICK_OFF_THE_TABLE = 8;
+  UPDATE_USER_INFO = 9;
+  DISCARD = 10;
+  SEND_CARD = 11;
+  SHOW_SUIT = 12;
+  HIT_CARD = 13;
+  TAKE_CARD = 15;
+  UPDATE_POT = 14;
+  DECLARE = 16;
+  FIGHT = 17;
+  FIGHT_RESPONSE = 18;
+}
+message FightResponse{
+  string userid = 1;
+  bool isFight = 2;
+}
+message Fight{
+  string userid = 1;
+  int32 timeout = 2;
+}
+message FinishGame{
+  repeated TongitsFinishItem inforFinish = 1;
+  int64 Pot = 2;
+}
+message TongitsFinishItem{
+  string userid = 1;
+  int32 point = 2;
+  int64 agwin = 3;
+  int32 baseWinPoint = 4;
+  int32 tongitsPoint = 5;
+  int32 secretPoint = 6;
+  int32 numSeceret = 7;
+  int32 bonusPoint =8;
+  int32 bunnedPlayersPoint = 9;
+  int32 challengersPoint = 10;
+  int64 hitPot = 11;
+  repeated Tongits_ListCard hand = 12;
+  int32 rank = 13;
+  int64 agfinal = 14;
+  int32 winFightType = 15;
+   /*
+    winFightType = -1 win không phải fight
+    winFightType = 0 người chơi win fight
+	 	winFightType = 1 người chơi win challege
+	 	winFightType = 2 người chơi thua fight
+	 	winFightType = 3 người chơi thua challege 
+  */
+}
+
+message TongitsUpdateDesk {
+  bool is_update_turn = 1;
+  string player_turn = 2;
+  bool is_update_player_hand = 5;
+  TongitsPlayerHandCards hand = 6;
+  bool is_update_table = 11;
+  Tongits_UpdateTable table = 12;
+}
+
+message Tongits_UpdateTable {
+  repeated Tongits_Player players = 1;
+  repeated Tongits_Player playing_players = 2;
+  repeated Tongits_Player join_players = 3;
+  repeated Tongits_Player leave_players = 4;
+  Pot pot = 5;
+  int64 time_play = 7; // timestamp play game
+  int64 remain_time = 8; // remain time to end game
+  Tongits_GameState game_state = 9;
+}
+
+message Tongits_Player {
+  string id = 1;
+  string user_name = 2;
+  string wallet = 3;
+  bool is_playing = 4;
+  repeated Tongits_Card cards = 6;
+  int64 vip_level = 7;
+  string avatar_id = 13;
+}

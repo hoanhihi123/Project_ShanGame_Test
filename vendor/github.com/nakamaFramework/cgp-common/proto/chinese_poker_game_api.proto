@@ -1,0 +1,307 @@
+// Copyright 2020 The Nakama Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+// The realtime protocol for the template match engine.
+package api;
+
+option go_package = "github.com/nakamaFramework/cgp-bing-module/api";
+
+enum CardStatus {
+  STATUS_HOLD = 0;
+  STATUS_UNHOLD = 1;
+}
+
+enum CardSuit {
+  SUIT_UNSPECIFIED = 0;
+  SUIT_HEARTS = 1;
+  SUIT_DIAMONDS = 2;
+  SUIT_CLUBS = 3;
+  SUIT_SPADES = 4;
+}
+
+enum CardRank {
+  RANK_UNSPECIFIED = 0;
+  RANK_A = 1;
+  RANK_2 = 2;
+  RANK_3 = 3;
+  RANK_4 = 4;
+  RANK_5 = 5;
+  RANK_6 = 6;
+  RANK_7 = 7;
+  RANK_8 = 8;
+  RANK_9 = 9;
+  RANK_10 = 10;
+  RANK_J = 11;
+  RANK_Q = 12;
+  RANK_K = 13;
+}
+
+// The card
+message Card {
+  CardRank rank = 1;
+  CardSuit suit = 2;
+  CardStatus status = 3;
+}
+
+message ListCard { repeated Card cards = 1; }
+
+enum ChoiceCode {
+  // No choice specified. Unused.
+  CHOICE_UNSPECIFIED = 0;
+  CHOICE_STAND = 1;
+  CHOICE_HIT = 2;
+}
+
+// The complete set of opcodes used for communication between clients and
+// server.
+enum OpCodeRequest {
+  // No opcode specified. Unused.
+  OPCODE_UNSPECIFIED = 0;
+  // New game round starting.
+  OPCODE_REQUEST_NEW_GAME = 1; // message NewGame
+  // Request leave game
+  OPCODE_REQUEST_LEAVE_GAME = 3;
+  OPCODE_REQUEST_COMBINE_CARDS = 4;
+  OPCODE_REQUEST_SHOW_CARDS = 5;    // message Organize
+  OPCODE_REQUEST_DECLARE_CARDS = 6; // message Organize
+  OPCODE_USER_INTERACT_CARDS = 7;   // message noti user move card
+
+  OPCODE_REQUEST_BET = 8;
+  OPCODE_REQUEST_USER_IN_TABLE = 9;   // get table info
+  OPCODE_REQUEST_INFO_TABLE = 10;     //
+  OPCODE_REQUEST_HISTORY_RESULT = 11; //
+
+  OPCODE_REQUEST_SPIN = 12;
+  OPCODE_REQUEST_BUY_SIXIANG_GEM = 13;
+  OPCODE_REQUEST_TIP_INGAME = 14;
+  OPCODE_REQUEST_SYNC_TABLE = 15;
+}
+
+// The complete set of opcodes used for communication between clients and
+// server.
+enum OpCodeUpdate {
+  OPCODE_UPDATE_UNSPECIFIED = 0;
+  OPCODE_UPDATE_TABLE = 1;  // message UpdateTable
+  OPCODE_UPDATE_DEAL = 2;   // message UpdateDeal
+  OPCODE_UPDATE_FINISH = 3; // message UpdateFinish
+  // Request was rejected.
+  OPCODE_UPDATE_REJECTED = 4;
+  // Update game state
+  OPCODE_UPDATE_GAME_STATE = 5;
+  // update card state/combine, show, declare
+  OPCODE_UPDATE_CARD_STATE = 6;
+  OPCODE_UPDATE_WALLET = 7;
+  OPCODE_KICK_OFF_THE_TABLE = 8;
+  OPCODE_UPDATE_USER_INFO = 9;
+  OPCODE_USER_IN_TABLE_INFO = 10;
+  OPCODE_ERROR = 11;
+  OPCODE_BUY_SIXIANG_GEM = 13;
+  OPCODE_PLAYER_CHANGE = 14;
+  OPCODE_RESPONSE_TIP_INGAME = 15;
+  OPCODE_RESPONSE_SYNC_TABLE = 16;
+}
+
+enum GameState {
+  GameStateUnknown = 0;
+  GameStateIdle = 1;
+  GameStateMatching = 2;
+  GameStatePreparing = 3;
+  GameStatePlay = 4;
+  GameStateReward = 5;
+  GameStateFinish = 6;
+}
+
+// Message data sent by client to server representing the cards was organize.
+message NewGame {}
+
+// Message data sent by client to server representing the cards was organize.
+message Organize {
+  // The current state of the cards.
+  ListCard cards = 1;
+}
+
+// Message data sent by server to clients representing the joining or leaving of
+// presence
+message UpdateTable {
+  repeated Player players = 1;
+  repeated Player playing_players = 2;
+  repeated Player join_players = 3;
+  repeated Player leave_players = 4;
+  int64 bet = 5;         // chip bet info
+  int64 vip = 6;         // min level vip require join room
+  int64 time_play = 7;   // timestamp play game
+  int64 remain_time = 8; // remain time to end game
+  GameState game_state = 9;
+  Jackpot jp_treasure = 10;
+}
+
+message PresenceCards {
+  string presence = 1;
+  repeated Card cards = 2;
+}
+
+// Complete game round with winner announcement.
+message UpdateDeal { 
+  PresenceCards presence_card = 1;
+  map<string,CardEvent> card_event = 2;
+}
+
+message UpdateGameState {
+  GameState state = 1;
+  int64 count_down = 2;
+  ArrangeCard arrange_card = 3;
+  repeated PresenceCards presenceCards = 4;
+}
+
+enum CardEvent {
+  COMBINE = 0;
+  SHOW = 1;
+  DECLARE = 2;
+  MOVE = 4;
+}
+
+message ArrangeCard {
+  string Presence = 1;
+  CardEvent card_event = 2;
+}
+
+enum HandRanking {
+  StraightFlush = 0;
+  FourOfAKind = 1;
+  FullHouse = 2;
+  Flush = 3;
+  Straight = 4;
+  ThreeOfAKind = 5;
+  TwoPairs = 6;
+  Pair = 7;
+  HighCard = 8;
+  NaturalThreeStraights = 101;
+  NaturalThreeOfFlushes = 102;
+  NaturalSixPairs = 103;
+  NaturalFullColors = 104;
+  NaturalDragon = 105;
+  NaturalCleanDragon = 106;
+}
+
+enum HandBonusType {
+  None = 0;
+  MisSet = 1;
+  Scoop = 2;
+  ScoopAll = 3;
+  BonusFullHouseMidHand = 101;
+  BonusThreeOfAKindFrontHand = 102;
+  BonusFourOfAKindBackHand = 103;
+  BonusStraightFlushBackHand = 104;
+  BonusFourOfAKindMidHand = 105;
+  BonusStraightFlushMidHand = 106;
+  BonusNaturalThreeStraights = 201;
+  BonusNaturalThreeOfFlushes = 202;
+  BonusNaturalSixPairs = 203;
+  BonusNaturalFullColors = 204;
+  BonusNaturalDragon = 205;
+  BonusNaturalCleanDragon = 206;
+}
+
+message HandBonus {
+  string win = 1;
+  string lose = 2;
+  HandBonusType type = 3;
+  int64 factor = 4;
+}
+
+enum PointType {
+  Point_Normal = 0;
+  Point_Mis_Set = -1;
+  Point_Natural = 1;
+}
+
+message HandResult {
+  HandRanking ranking = 1;
+  uint64 point = 2;
+  uint64 lpoint = 3;
+}
+
+message PointResult {
+  HandResult front = 1;
+  HandResult middle = 2;
+  HandResult back = 3;
+  HandResult natural = 4;
+  PointType type = 5;
+}
+
+message ScoreResult {
+  int64 front_factor = 1;
+  int64 middle_factor = 2;
+  int64 back_factor = 3;
+  int64 front_bonus_factor = 4;
+  int64 middle_bonus_factor = 5;
+  int64 back_bonus_factor = 6;
+  int64 natural_factor = 7;
+  int64 bonus_factor = 8; // mis set, scoop, scoop all
+  int64 scoop = 9;
+  int32 num_hand_win = 10;
+  int64 total_factor = 11;
+}
+
+message ComparisonResult {
+  string user_id = 1;
+  ScoreResult score_result = 2;
+  PointResult point_result = 3;
+}
+
+message UpdateFinish {
+  repeated ComparisonResult results = 1;
+  repeated HandBonus bonuses = 2;
+  Jackpot jackpot = 3;
+  Jackpot jp_treasure = 4;
+}
+
+message BalanceUpdate {
+  string user_id = 1;
+  int64 amount_chip_before = 2;
+  int64 amount_chip_current = 3;
+  int64 amount_chip_add = 4;
+  int64 amout_chip_bet = 5;
+  int64 amout_chip_fee = 6;
+  int64 amout_chip_add_prefee = 7;
+  int64 total_chip_in_match = 8;
+}
+
+message BalanceResult {
+  repeated BalanceUpdate updates = 1;
+  Jackpot jackpot = 2;
+}
+
+message Player {
+  string id = 1;
+  string user_name = 2;
+  string wallet = 3;
+  bool is_playing = 4;
+  CardStatus card_status = 5;
+  ListCard cards = 6;
+  int64 vip_level = 7;
+  string avatar_id = 13;
+  int64 sid = 14;
+  int32 order = 15;
+}
+
+message Jackpot {
+  int64 id = 1;
+  string user_id = 2;
+  string game_code = 3;
+  int64 chips = 4;
+  int64 create_time_unix = 5;
+}
