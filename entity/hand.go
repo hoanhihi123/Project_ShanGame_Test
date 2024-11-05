@@ -61,64 +61,96 @@ func calculatePoint(cards []*pb.Card) int32 {
 	}
 	return point
 }
+func (h *Hand) isCheckHandType_SHAN(point int32) bool {
+	return (point == 9 || point == 8) && len(h.first) == 2
+}
+
+func (h *Hand) getCardName_CardSuitOfOneDeck() ([]string, []string) {
+	arr_Card_Name := []string{} // gia tri ten loai bai: J, Q, 2,3 ..
+	arr_Card_Suit := []string{} // gia tri loai la bai : co, tep, ...
+
+	for i := 0; i < len(h.first); i++ {
+		rankName := h.first[i].GetRank().String() // name of card
+		fmt.Println("\n Rank name = ", rankName)
+		index := strings.LastIndex(rankName, string('_'))
+
+		arr_Card_Name = append(arr_Card_Name, rankName[index+1:])
+		fmt.Printf("Card name: %+v", arr_Card_Name)
+
+		arr_Card_Suit = append(arr_Card_Suit, h.first[i].Suit.String())
+		fmt.Printf("Card suit: %+v", arr_Card_Suit[i])
+	}
+
+	return arr_Card_Name, arr_Card_Suit
+}
+
+func (h *Hand) isCheck_sameCardName(arr_card_name []string) bool {
+	return arr_card_name[0] == arr_card_name[1] && arr_card_name[0] == arr_card_name[2]
+}
+
+func (h *Hand) isCheckHandType_DIA(arr_Card_Name []string) bool {
+	return (arr_Card_Name[0] == "J" || arr_Card_Name[1] == "J" || arr_Card_Name[2] == "J") &&
+		(arr_Card_Name[0] == "Q" || arr_Card_Name[1] == "Q" || arr_Card_Name[2] == "Q") &&
+		(arr_Card_Name[0] == "K" || arr_Card_Name[1] == "K" || arr_Card_Name[2] == "K")
+}
+
+func (h *Hand) isCheck_SameCardSuit(arr_card_suit []string) bool {
+	return (arr_card_suit[0] == arr_card_suit[1]) && (arr_card_suit[0] == arr_card_suit[2])
+}
+
+func (h *Hand) sordDeck() {
+	for i := 0; i < len(h.first)-1; i++ {
+		for j := 1; j < len(h.first)-1-i; j++ {
+			if *h.first[j].GetRank().Enum() < *h.first[j+1].GetRank().Enum() {
+				h.first[j], h.first[j+1] = h.first[j+1], h.first[j]
+			}
+		}
+	}
+}
+
+func (h *Hand) isCheck_3ConsecutiveCards() bool { // check 3 card liền nhau
+	isCheck := 0
+	for i := 0; i < len(h.first); i++ {
+		if *h.first[i].GetRank().Enum()+1 == *h.first[i+1].GetRank().Enum() {
+			isCheck++
+		}
+	}
+	return isCheck == 2
+}
+
+func (h *Hand) isCheck_HandType_THUNG_PHA_SANH(arr_card_suit []string) bool {
+	h.sordDeck()
+	fmt.Printf("\nBộ bài sau khi sắp xếp: %+v", h.first)
+	return h.isCheck_SameCardSuit(arr_card_suit) && h.isCheck_3ConsecutiveCards()
+}
 
 // Eval(1) if want to evaluate 1st hand, any else for 2nd hand
 func (h *Hand) Eval() (int32, pb.ShanGameHandType) { // return point, type of hand
-	point := int32(0) // init a point = 0
+	point := int32(0)
 	point = calculatePoint(h.first)
 	// shan
-	if (point == 9 || point == 8) && len(h.first) == 2 {
+	if h.isCheckHandType_SHAN(point) {
 		fmt.Println("Bộ bài của user: ", h.userId, " thuộc loại Shan", ", với point = ", point)
 		return point, pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_SHAN // shan
 	} else if len(h.first) == 3 {
 		// Bài xám cô (3 lá giống nhau) // giong nhau ve luong, list cac gia tri cua la bai
-		// arr_result_Card_Value := []int32{} // gia tri lan luot cua bo bai
-		arr_result_Card_Name := []string{} // gia tri ten loai bai
-		arr_result_Card_Suit := []string{} // gia tri loai la bai : co, tep, ...
+		arr_Card_Name, arr_Card_Suit := h.getCardName_CardSuitOfOneDeck()
 
-		for i := 0; i < len(h.first); i++ {
-			// rankValue := h.first[i].Rank // value of card
-			// arr_result_Card_Value = append(arr_result_Card_Value, getCardPoint(rankValue))
-
-			// fmt.Printf("\n\ngia tri cua la bai current = %+v", arr_result_Card_Value)
-
-			rankName := h.first[i].GetRank().String() // name of card
-			fmt.Println("\ngia tri ten la bai current = ", rankName)
-			index := strings.LastIndex(rankName, string('_'))
-			arr_result_Card_Name = append(arr_result_Card_Name, rankName[index+1:])
-			fmt.Printf("\ncard_name sau khi cắt chuỗi kết quả: %+v", arr_result_Card_Name)
-
-			arr_result_Card_Suit = append(arr_result_Card_Suit, h.first[i].Suit.String())
-			fmt.Printf("\ncard_suit cua la bai hien tai: %+v", arr_result_Card_Suit[i])
-		}
-
-		// fmt.Println("\nXem thông tin lá bài - (giá trị lá bài): ", arr_result_Card_Value[0], ", ", arr_result_Card_Value[1], ", ", arr_result_Card_Value[2])
-		fmt.Println("\nXem thông tin lá bài - (tên lá bài): ", arr_result_Card_Name[0], ", ", arr_result_Card_Name[1], ", ", arr_result_Card_Name[2])
-		fmt.Println("Xem thông tin lá bài - (loại lá bài): ", arr_result_Card_Suit[0], ", ", arr_result_Card_Suit[1], ", ", arr_result_Card_Suit[2])
+		fmt.Println("\nXem thông tin lá bài - (tên lá bài): ", arr_Card_Name[0], ", ", arr_Card_Name[1], ", ", arr_Card_Name[2])
+		fmt.Println("Xem thông tin lá bài - (loại lá bài): ", arr_Card_Suit[0], ", ", arr_Card_Suit[1], ", ", arr_Card_Suit[2])
 
 		// xam co Bài có 3 lá giống nhau , ví dụ: AAA > KKK > QQQ > … > 333 > 222
-		if arr_result_Card_Name[0] == arr_result_Card_Name[1] && arr_result_Card_Name[0] == arr_result_Card_Name[2] {
+		if h.isCheck_sameCardName(arr_Card_Name) {
 
 			return point, pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_XAM_CO
 
-		} else if (arr_result_Card_Name[0] == "J" || arr_result_Card_Name[1] == "J" || arr_result_Card_Name[2] == "J") &&
-			(arr_result_Card_Name[0] == "Q" || arr_result_Card_Name[1] == "Q" || arr_result_Card_Name[2] == "Q") &&
-			(arr_result_Card_Name[0] == "K" || arr_result_Card_Name[1] == "K" || arr_result_Card_Name[2] == "K") {
-			// 3 con đầu người (J, Q, K)
+		} else if h.isCheckHandType_DIA(arr_Card_Name) { // 3 con đầu người (J, Q, K)
+
 			return point, pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_DIA
-		} else {
-			// Thùng phá sảnh (3 lá liền nhau & cùng chất)
-			arr_resultJoinStr_CardName := strings.Join(arr_result_Card_Name, "")
-			check_arr_resultJoinStr_CardName_fit := false
-			arr_str_check := []string{"QKA", "10JQ", "910J", "8910", "789", "678", "567", "456", "345", "234"}
-			for _, str_check := range arr_str_check {
-				if arr_resultJoinStr_CardName == str_check {
-					check_arr_resultJoinStr_CardName_fit = true
-					break
-				}
-			}
-			if check_arr_resultJoinStr_CardName_fit &&
-				((arr_result_Card_Suit[0] == arr_result_Card_Suit[1]) && (arr_result_Card_Suit[0] == arr_result_Card_Suit[2])) {
+
+		} else { // Thùng phá sảnh (3 lá liền nhau & cùng chất)
+
+			if h.isCheck_HandType_THUNG_PHA_SANH(arr_Card_Suit) {
 				return point, pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_THUNG_PHA_SANH // Thùng phá sảnh
 			}
 		}
@@ -154,10 +186,7 @@ func (h *Hand) Compare(d *Hand) int { // h: player, d: dealer
 		fmt.Println("CardName của dealer:", dealer_card_string)
 		// if type = xam => ko so sanh point nhu thong thuong duoc
 		if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_XAM_CO {
-			// gop 3 la bai thanh 1 bien dang string
-			// truyen vao function xu ly shan
 			result_Xam := CompareHands_typeXAM_CO(player_card_string, dealer_card_string)
-			fmt.Println("Kết quả của loại bài xam trả về ", result_Xam)
 			return result_Xam
 		} else if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_DIA {
 			// gop 3 la bai thanh 1 bien dang string
@@ -275,8 +304,8 @@ func (h *Hand) GetMaxCardByRanking_ShanType(listCard []*pb.Card) (int, int) {
 		}
 
 		if max_ranking < cardValue {
-			max_ranking = cardValue
 			max_value_suit = cardSuit
+			return cardValue, cardSuit
 		}
 	}
 
