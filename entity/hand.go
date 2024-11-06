@@ -59,8 +59,27 @@ func calculatePoint(cards []*pb.Card) int32 {
 		v := getCardPoint(c.Rank) // lay point thong qua rank, gan vao v
 		point += v                // cong cac gia tri quan bai
 	}
+	if point >= 10 {
+		return (point / 10) % 10
+	}
+
 	return point
 }
+
+// tinh tong theo so luong that cua la bai
+func calculatePoint_withFactValueCard(cards []*pb.Card) int32 {
+	if cards == nil { // card : bo bai = nil, tương ứng chưa được khởi tạo và cũng chưa được gán giá trị gì
+		return 0
+	}
+	point := int32(0) // tong diem
+	for _, c := range cards {
+		v := getCardPoint(c.Rank) // lay point thong qua rank, gan vao v
+		point += v                // cong cac gia tri quan bai
+	}
+
+	return point
+}
+
 func (h *Hand) isCheckHandType_SHAN(point int32) bool {
 	return (point == 9 || point == 8) && len(h.first) == 2
 }
@@ -84,8 +103,8 @@ func (h *Hand) getCardName_CardSuitOfOneDeck() ([]string, []string) {
 	return arr_Card_Name, arr_Card_Suit
 }
 
-func (h *Hand) isCheck_sameCardName(arr_card_name []string) bool {
-	return arr_card_name[0] == arr_card_name[1] && arr_card_name[0] == arr_card_name[2]
+func (h *Hand) isCheck_sameCardName() bool {
+	return (h.first[0].GetRank().String() == h.first[1].GetRank().String()) && (h.first[0].GetRank().String() == h.first[2].GetRank().String())
 }
 
 func (h *Hand) isCheckHandType_DIA(arr_Card_Name []string) bool {
@@ -108,8 +127,16 @@ func (h *Hand) sordDeck() {
 	}
 }
 
+// làm sao để loại bỏ trường hợp: 123, KA2 không được tính
+// 123 = 6
+// KA2 = 16
 func (h *Hand) isCheck_3ConsecutiveCards() bool { // check 3 card liền nhau
 	isCheck := 0
+	sumCard := calculatePoint(h.first)
+	if sumCard == 6 || sumCard == 16 {
+		return false
+	}
+
 	for i := 0; i < len(h.first); i++ {
 		if *h.first[i].GetRank().Enum()+1 == *h.first[i+1].GetRank().Enum() {
 			isCheck++
@@ -117,6 +144,8 @@ func (h *Hand) isCheck_3ConsecutiveCards() bool { // check 3 card liền nhau
 	}
 	return isCheck == 2
 }
+
+// cùng chất và liên tiếp nhau
 
 func (h *Hand) isCheck_HandType_THUNG_PHA_SANH(arr_card_suit []string) bool {
 	h.sordDeck()
@@ -140,7 +169,7 @@ func (h *Hand) Eval() (int32, pb.ShanGameHandType) { // return point, type of ha
 		fmt.Println("Xem thông tin lá bài - (loại lá bài): ", arr_Card_Suit[0], ", ", arr_Card_Suit[1], ", ", arr_Card_Suit[2])
 
 		// xam co Bài có 3 lá giống nhau , ví dụ: AAA > KKK > QQQ > … > 333 > 222
-		if h.isCheck_sameCardName(arr_Card_Name) {
+		if h.isCheck_sameCardName() {
 
 			return point, pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_XAM_CO
 
@@ -180,30 +209,26 @@ func (h *Hand) Compare(d *Hand) int { // h: player, d: dealer
 	if int(player_handType) > int(dealer_handType) { // so sanh type , type trong nay cung chua gia tri duoc dinh nghia trong file blackjack_api.pb.go
 		return 1
 	} else if int(player_handType) == int(dealer_handType) { // neu gia tri type = nhau
-		player_card_string := h.JoinCardsToString(h.first)
-		dealer_card_string := h.JoinCardsToString(d.first)
-		fmt.Println("CardName của player:", player_card_string)
-		fmt.Println("CardName của dealer:", dealer_card_string)
 		// if type = xam => ko so sanh point nhu thong thuong duoc
 		if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_XAM_CO {
-			result_Xam := CompareHands_typeXAM_CO(player_card_string, dealer_card_string)
+			result_Xam := CompareHandType_XAM_CO(h.first, d.first)
 			return result_Xam
 		} else if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_DIA {
-			// gop 3 la bai thanh 1 bien dang string
-			if player_card_string == dealer_card_string {
+			// Bài cùng bộ đầu người là hòa
+			if calculatePoint_withFactValueCard(h.first) == calculatePoint_withFactValueCard(d.first) {
 				return 0
 			}
 		} else if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_THUNG_PHA_SANH {
 			// thung pha sanh
 			// so sanh theo thu tu = gia tri
-			resultCompare := CompareHands_typeTHUNG_PHA_SANH_byRank(player_card_string, dealer_card_string)
+			result := CompareHandType_THUNG_PHA_SANH_byRank(h.first, d.first)
 
-			if resultCompare > 0 {
-				return resultCompare
+			if result > 0 {
+				return result
 			}
 			// result = 0
 			// so sanh theo chat ( neu = gia tri )
-			return h.CompareSpecial_ShanType(d.first)
+			return h.compareBySuit(d.first)
 		} else {
 			// normal
 			if (len(h.first) < len(d.first)) || (player_point > dealer_point) { // so sanh diem
@@ -213,7 +238,7 @@ func (h *Hand) Compare(d *Hand) int { // h: player, d: dealer
 			} else { // p_point = d_point && p_type = d_type
 				if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_SHAN {
 					// thuc hien ham so sanh tai day
-					return h.CompareSpecial_ShanType(d.first)
+					return h.compareBySuit(d.first)
 				}
 			}
 		}
@@ -221,16 +246,6 @@ func (h *Hand) Compare(d *Hand) int { // h: player, d: dealer
 		return -1
 	}
 	return 0
-}
-
-// check 2 lá bài có cùng chất ko
-func (h *Hand) checkCardHaveSame_suit() bool {
-	return h.first[0].Suit.String() == h.first[1].Suit.String()
-}
-
-// check 2 lá bài có cùng value ko
-func (h *Hand) checkCardHaveSame_value() bool {
-	return h.first[0].Rank.Number() == h.first[1].Rank.Number()
 }
 
 // get tỉ lệ thắng thua của bộ bài player
@@ -283,9 +298,11 @@ func (h *Hand) JoinCardsToString(listCard []*pb.Card) string {
 	cardsString := ""
 	for i := 0; i < len(listCard); i++ {
 		rankName := listCard[i].GetRank().String() // name of card
-		index := strings.LastIndex(rankName, string('_'))
-		cardsString += rankName[index+1:]
+		// index := strings.LastIndex(rankName, string('_'))
+		// cardsString += rankName[index+1:]
+		cardsString += rankName
 	}
+
 	return cardsString
 }
 
@@ -312,34 +329,19 @@ func (h *Hand) GetMaxCardByRanking_ShanType(listCard []*pb.Card) (int, int) {
 	return max_ranking, max_value_suit
 }
 
-var handRanking = map[string]int{
-	"AAA":    13, // Highest rank
-	"KKK":    12,
-	"QQQ":    11,
-	"JJJ":    10,
-	"101010": 9, // T represents 10
-	"999":    8,
-	"888":    7,
-	"777":    6,
-	"666":    5,
-	"555":    4,
-	"444":    3,
-	"333":    2,
-	"222":    1, // Lowest rank
-}
-
-func CompareHands_typeXAM_CO(hand1, hand2 string) int {
-	rank1 := handRanking[hand1]
-	rank2 := handRanking[hand2]
-
-	fmt.Println("Rank bộ bài 1: ", rank1)
-	fmt.Println("Rank bộ bài 2: ", rank2)
-	// Compare based on predefined ranking
-	if rank1 > rank2 {
-		return 1 // hand1 is higher
+func CompareHandType_XAM_CO(playerCard, dealerCard []*pb.Card) int {
+	// lấy ra value của 3 lá bài
+	sum_playerCard := calculatePoint_withFactValueCard(playerCard)
+	sum_dealerCard := calculatePoint_withFactValueCard(dealerCard)
+	if sum_playerCard == 3 {
+		return 1
 	}
-	// rank1 < rank2
-	return -1 // hand2 is higher
+	if int(sum_playerCard) > int(sum_dealerCard) {
+		return 1
+	}
+
+	return -1
+
 	// with type hand : XAM_CO khong co truong hop = nhau
 
 }
@@ -357,14 +359,30 @@ var handRanking_ThungPhaXanh = map[string]int{
 	"234":  1, // Lowest rank
 }
 
-func CompareHands_typeTHUNG_PHA_SANH_byRank(hand1, hand2 string) int {
-	rank1 := handRanking[hand1]
-	rank2 := handRanking[hand2]
+// var handRanking = map[string]int{
+// 	"AAA":    13, // Highest rank
+// 	"KKK":    12,
+// 	"QQQ":    11,
+// 	"JJJ":    10,
+// 	"101010": 9, // T represents 10
+// 	"999":    8,
+// 	"888":    7,
+// 	"777":    6,
+// 	"666":    5,
+// 	"555":    4,
+// 	"444":    3,
+// 	"333":    2,
+// 	"222":    1, // Lowest rank
+// }
+
+func CompareHandType_THUNG_PHA_SANH_byRank(hand1, hand2 []*pb.Card) int {
+	sum_hand1 := calculatePoint_withFactValueCard(hand1)
+	sum_hand2 := calculatePoint_withFactValueCard(hand2)
 
 	// Compare based on predefined ranking
-	if rank1 > rank2 {
+	if sum_hand1 > sum_hand2 {
 		return 1 // hand1 is higher
-	} else if rank1 < rank2 {
+	} else if sum_hand1 < sum_hand2 {
 		return -1
 	} else { // bang rank - so theo chat
 		return 0
@@ -373,7 +391,7 @@ func CompareHands_typeTHUNG_PHA_SANH_byRank(hand1, hand2 string) int {
 }
 
 // so sanh bai dang shan
-func (h *Hand) CompareSpecial_ShanType(d []*pb.Card) int {
+func (h *Hand) compareBySuit(d []*pb.Card) int {
 	// truyen vao ds la bai cua user
 	player_maxCard, player_maxCard_suit := h.GetMaxCardByRanking_ShanType(h.first)
 	dealer_maxCard, dealer_maxCard_suit := h.GetMaxCardByRanking_ShanType(d)

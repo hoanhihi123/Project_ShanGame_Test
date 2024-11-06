@@ -210,7 +210,7 @@ func (p *Processor) ProcessMessageFromUser(
 				}
 			case pb.ShanGameBetCode_SHANGAME_BET_NORMAL:
 				if s.IsCanBet(bet.UserId, wallet.Chips, bet) {
-					s.AddBet(bet)
+					s.AddBetOfUserBet(bet)
 					p.notifyUpdateBet(ctx, nk, logger, dispatcher, s, bet.UserId, bet.Chips, pb.ShanGameHandN0_SHANGAME_HAND_1ST)
 				}
 			}

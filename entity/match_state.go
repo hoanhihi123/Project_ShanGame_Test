@@ -155,18 +155,6 @@ func (s *MatchState) GetUpdateFinish() *pb.ShanGameUpdateFinish  { return s.upda
 
 func (s *MatchState) GetUserBetById(userId string) *pb.ShanGamePlayerBet { return s.userBets[userId] }
 
-// func (s *MatchState) CalChipForUserById(userId string, betValue int) {
-// 	s.pot[userId].First += s.pot[userId].First + int64(betValue)
-// }
-
-// func (s *MatchState) SubstractChipOfUserById(userId string, betValue int) {
-// 	// kiem tra xem du so du de tru ko
-// 	if s.pot[userId].First >= int64(betValue) {
-// 		s.pot[userId].First = s.pot[userId].First - int64(betValue)
-// 	}
-// 	s.pot[userId].First = 0
-// }
-
 // check can bet ?
 func (s *MatchState) IsCanBet(userId string, balance int64, bet *pb.ShanGameBet) bool {
 	if bet.Chips+s.userBets[userId].First+s.userBets[userId].Insurance+s.userBets[userId].Second > int64(MaxBetAllowed*s.Label.Bet) {
@@ -184,64 +172,86 @@ func (m *MatchState) IsBetFitMatch(userId string) bool {
 	return m.userBets[userId].First < int64(m.Label.Bet)
 }
 
-// add bet for user
-func (s *MatchState) AddBet(v *pb.ShanGameBet) {
-
-	if _, found := s.userBets[v.UserId]; !found { // không tìm thấy userId trong userBet thì set value các trường = 0
-		s.userBets[v.UserId] = &pb.ShanGamePlayerBet{
-			UserId:    v.UserId,
-			Insurance: 0,
-			First:     0,
+// set bet for user by id
+func (s *MatchState) playerNotExits_inUserBets(userId string) {
+	if _, found := s.userBets[userId]; !found { // không tìm thấy userId trong userBet thì set value các trường = 0
+		s.userBets[userId] = &pb.ShanGamePlayerBet{
+			UserId: userId,
+			First:  0,
 		}
 	}
-	fmt.Println("UserID current đặt cược: ", v.UserId, ", Mức cược của user current = ", s.userBets[v.UserId].First)
+}
 
-	// set mức cược cho player
-	s.userBets[v.UserId].First += v.Chips
-	s.userLastBets[v.UserId] = s.userBets[v.UserId].First
-	s.allowAction = false
+func (s *MatchState) AddBet_inUserBets(userId string, chip int64) {
+	s.userBets[userId].First += chip
+	s.userLastBets[userId] = s.userBets[userId].First
+}
 
-	if value, ok := s.PlayingPresences.Get(v.UserId); ok {
+func (s *MatchState) SubstractBet_inUserBets(userId string, chip int64) {
+	// add bet for user by id
+	s.userBets[userId].First -= chip
+	s.userLastBets[userId] = s.userBets[userId].First
+
+}
+
+func (s *MatchState) SubstractMoney_inWallet_playingPresence(userId string, chip int64) {
+	if value, ok := s.PlayingPresences.Get(userId); ok {
 		playingPresence := value.(MyPrecense)
-		playingPresence.Chips -= v.Chips // trừ đi tiền trong ví tạm của player tương ứng
+		playingPresence.Chips -= chip // trừ đi tiền trong ví tạm của player tương ứng
 	} else {
 		// Xử lý trường hợp `User1` không tồn tại (nếu cần)
-		fmt.Println(v.UserId, " không tồn tại trong danh sách Presences")
+		log.Println(userId, " không tồn tại trong danh sách Presences")
 	}
+
+}
+
+func (s *MatchState) AddMoney_inWallet_playingPresence(userId string, chip int64) {
+	if value, ok := s.PlayingPresences.Get(userId); ok {
+		playingPresence := value.(MyPrecense)
+		playingPresence.Chips += chip // trừ đi tiền trong ví tạm của player tương ứng
+	} else {
+		// Xử lý trường hợp `User1` không tồn tại (nếu cần)
+		log.Println(userId, " không tồn tại trong danh sách Presences")
+	}
+}
+
+// add bet for user
+func (s *MatchState) AddBetOfUserBet(v *pb.ShanGameBet) {
+	// xem userId ko tồn tại trong userBet thì khởi tạo giá trị mới cho nó
+	s.playerNotExits_inUserBets(v.UserId)
+
+	fmt.Println("UserID current đặt cược: ", v.UserId, ", Mức cược của user current = ", s.userBets[v.UserId].First)
+
+	s.AddBet_inUserBets(v.UserId, v.Chips)
+
+	s.SubstractMoney_inWallet_playingPresence(v.UserId, v.Chips)
 
 	fmt.Println("UserID current sau khi tăng mức đặt cược: ", v.UserId, ", Mức cược của user current sau khi đặt cược= ", s.userBets[v.UserId].First)
 }
 
-func (s *MatchState) GetBet(v *pb.ShanGameBet) int64 {
-	return s.userBets[v.UserId].First
-}
+// substract bet for user
+func (s *MatchState) SubstractBetOfUserBet(v *pb.ShanGameBet) {
+	// xem userId ko tồn tại trong userBet thì khởi tạo giá trị mới cho nó
+	s.playerNotExits_inUserBets(v.UserId)
 
-// add bet for user
-func (s *MatchState) ReduceBet(v *pb.ShanGameBet) {
-	if _, found := s.userBets[v.UserId]; !found {
-		s.userBets[v.UserId] = &pb.ShanGamePlayerBet{
-			UserId:    v.UserId,
-			Insurance: 0,
-			First:     0,
-			Second:    0,
-		}
-	}
+	// check money substract > userBet truoc do ko ?
+	betCurrent := s.userBets[v.UserId].First
 	fmt.Println("UserID current đặt cược: ", v.UserId, ", Mức cược của user current = ", s.userBets[v.UserId].First)
 
-	s.userBets[v.UserId].First -= v.Chips
-	s.userLastBets[v.UserId] = s.userBets[v.UserId].First
-	s.allowAction = false
-
-	if value, ok := s.PlayingPresences.Get(v.UserId); ok {
-		playingPresence := value.(MyPrecense)
-		playingPresence.Chips += v.Chips // cộng lại tiền trong ví tạm của player tương ứng
+	if betCurrent > v.Chips {
+		s.SubstractBet_inUserBets(v.UserId, betCurrent)
+		s.AddMoney_inWallet_playingPresence(v.UserId, betCurrent)
 	} else {
-		// Xử lý trường hợp `User1` không tồn tại (nếu cần)
-		fmt.Println(v.UserId, " không tồn tại trong danh sách Presences")
+		s.SubstractBet_inUserBets(v.UserId, v.Chips)
+		s.AddMoney_inWallet_playingPresence(v.UserId, v.Chips)
+
 	}
 
 	fmt.Println("UserID current sau khi giảm mức đặt cược: ", v.UserId, ", Mức cược của user current sau khi đặt cược= ", s.userBets[v.UserId].First)
+}
 
+func (s *MatchState) GetBet(v *pb.ShanGameBet) int64 {
+	return s.userBets[v.UserId].First
 }
 
 func (s *MatchState) IsCanInsuranceBet(userId string, balance int64) bool {
@@ -837,4 +847,112 @@ func (s *MatchState) chiaBaiChoPlayerTuongUng() {
 		fmt.Println("Message thông báo: Chưa có user nào đặt cược vào ván chơi!")
 		return
 	}
+}
+
+func (s *MatchState) Player_RegisterDealer(userId_param string) {
+	if value, ok := s.Presences.Get(userId_param); ok {
+		presence := value.(MyPrecense)
+		if presence.Chips > int64(s.Label.Bet) { // so sánh với mức cược tối thiểu của trận đấu
+			s.playerIsDealer = userId_param
+			s.POT = presence.Chips // set banker = tổng tiền trong ví của player đang có
+			s.dealerHand = &Hand{
+				userId: userId_param,
+			}
+		} else { // server is dealer
+			if value, ok := s.Presences.Get(""); ok {
+				server_presence := value.(MyPrecense)
+
+				s.playerIsDealer = ""
+				s.POT = server_presence.Chips // set chips của server đặt cược vào POT
+				s.dealerHand = &Hand{
+					userId: "",
+				}
+			}
+		}
+	}
+}
+
+func (s *MatchState) getChip_PresenceById(userId string) int64 {
+	chip := int64(0)
+	if value, ok := s.Presences.Get(userId); ok {
+		precence := value.(MyPrecense)
+		chip = precence.Chips
+	}
+	return chip
+}
+
+func (s *MatchState) set_PlayerCanBeDealer(idPlayerWantBeDealer string) {
+	// lấy mức chip của player đang là dealer
+	chip_playerIsDealer := s.getChip_PresenceById(s.playerIsDealer)
+
+	// lấy mức chip của player khác muốn xin làm dealer thay thế
+	chip_player2 := s.getChip_PresenceById(idPlayerWantBeDealer)
+
+	// check điều kiện đủ để player khác xin làm dealer - thay thế dealer current
+	if chip_player2 > chip_playerIsDealer && chip_player2 > int64(s.Label.Bet) {
+		s.playerIsDealer = idPlayerWantBeDealer
+		s.POT = chip_player2 // set banker = tổng tiền trong ví mà dealer hiện có
+		s.dealerHand = &Hand{
+			userId: idPlayerWantBeDealer,
+		}
+	}
+}
+
+func (s *MatchState) addPresence_PlayingPrecense_InMatch() {
+	if s.Presences.Size() > 0 {
+		i := s.Presences.Iterator()
+		for i.Next() {
+			// check size match
+			if s.PlayingPresences.Size() > 7 {
+				fmt.Println("Match is full, Can't add more player ... ")
+				break
+			}
+			// check trường hợp có add server vào game hay không?
+			if i.Key() == "" && s.playerIsDealer != "" { // trường hợp server là player, và isPlayingDealer có giá trị idPlayer => không thêm server vào ván game
+				continue
+			}
+			s.PlayingPresences.Put(i.Key(), i.Value())
+		}
+	} else {
+		fmt.Println("Hiện tại không có người chơi nào, cần ít nhất 1 user để chơi game!")
+		return
+	}
+}
+
+func (s *MatchState) setAddBet_forPlayerAndDealer(userBets []pb.ShanGameBet) {
+	for _, userBet := range userBets {
+		s.AddBetOfUserBet(&pb.ShanGameBet{
+			UserId: userBet.UserId,
+			Chips:  userBet.Chips,
+		})
+	}
+}
+
+func (s *MatchState) setSubstractBet_forPlayerAndDealer(userBets []pb.ShanGameBet) {
+	for _, userBet := range userBets {
+		s.SubstractBetOfUserBet(&pb.ShanGameBet{
+			UserId: userBet.UserId,
+			Chips:  userBet.Chips,
+		})
+	}
+}
+func (s *MatchState) checkDealerHand_haveTypeShan() bool {
+	dealerPoint, dealerHand := s.dealerHand.Eval() // tính điểm cho dealer và lấy ra type của nó
+	return dealerPoint > 0 && dealerHand == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_SHAN
+}
+
+func (s *MatchState) isPlayerHave_TypeShan(userIdPlayer string) bool {
+	playerPoint, playerTypeHand := s.userHands[userIdPlayer].Eval()
+	return playerPoint >= 0 && playerTypeHand != pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_SHAN && len(s.userHands[userIdPlayer].first) <= 3
+}
+
+// func chia thêm bài cho user nào , số lượng lá bài chia
+func (s *MatchState) devideCardForPlayer(userId string, numberCard int) {
+	listCard, err := s.deck.Deal(numberCard)
+	// check điều kiện khi nào thì player hợp lệ để bốc bài tiếp
+	if err == nil && s.isPlayerHave_TypeShan(userId) {
+		fmt.Println("Trước khi set giá trị cho user1:", s.userHands[userId].first)
+		s.userHands[userId].first = append(s.userHands[userId].first, listCard.Cards...)
+	}
+	fmt.Printf("Bộ bài sau khi rút lần 2 của user 1: \n%+v", s.userHands[userId].first)
 }
