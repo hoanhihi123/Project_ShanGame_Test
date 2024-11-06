@@ -77,7 +77,7 @@ func TestMatchState_hoan(t *testing.T) {
 	fmt.Println("khởi tạo trận đấu .... ")
 	// user request vào game
 
-	fmt.Println("Các user join vào game ....")
+	fmt.Println("Các user join vào game vào precense of match ....")
 	for userId, precense := range default_presence {
 		s.Presences.Put(userId, precense)
 	}
@@ -104,7 +104,9 @@ func TestMatchState_hoan(t *testing.T) {
 	fmt.Println("khởi tạo các user join vào trận đấu để chơi .... ")
 
 	// khi nào thì check maxPresence ?
+	fmt.Println("Thêm các presence vào playingPrecense")
 	s.addPresence_PlayingPrecense_InMatch()
+	fmt.Println("Số lượng player được thêm vào _ playingPrecence: ", s.PlayingPresences.Size())
 
 	// them muc cuoc cho user ( chon thong thuong, + - )
 	s.gameState = pb.GameState_GameStatePreparing
@@ -118,12 +120,21 @@ func TestMatchState_hoan(t *testing.T) {
 		fmt.Println("Thiết lập mức cược cho các player ... ")
 
 		s.setAddBet_forPlayerAndDealer(userBetsAdd)
+		fmt.Println("Xem thông tin các mức cược của các player - khi add mức cược ")
+		if len(s.userBets) > 0 {
+			for userId, player := range s.userBets {
+
+				fmt.Println("Bet of ", userId, ", chip = ", player.First) // mong doi = 500
+			}
+		}
+
 		s.setSubstractBet_forPlayerAndDealer(userBetsSubstract)
 
 		// lấy ra mức cược player đã đặt theo id tương ứng
-		fmt.Println("Xem thông tin các mức cược của các player")
+		fmt.Println("\n\nXem thông tin các mức cược của các player - sau khi trừ đi mức cược ")
 		if len(s.userBets) > 0 {
 			for userId, player := range s.userBets {
+
 				fmt.Println("Bet of ", userId, ", chip = ", player.First) // mong doi = 500
 			}
 		}
@@ -134,6 +145,9 @@ func TestMatchState_hoan(t *testing.T) {
 	fmt.Println("user request as player .... click deal ")
 
 	s.deck.Shuffle()
+
+	fmt.Println("kiểm tra các user nào không đưa ra mức cược => xóa khỏi userBet và playingPrecence...")
+	s.DeletePlayerAtUserBetIfBalance_equalZero()
 
 	fmt.Println("Chia bài .... cho các user đã đặt cược trong ván game .....")
 	s.chiaBaiChoPlayerTuongUng()

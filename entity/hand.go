@@ -67,7 +67,7 @@ func calculatePoint(cards []*pb.Card) int32 {
 }
 
 // tinh tong theo so luong that cua la bai
-func calculatePoint_withFactValueCard(cards []*pb.Card) int32 {
+func CalculatePoint_withFactValueCard(cards []*pb.Card) int32 {
 	if cards == nil { // card : bo bai = nil, tương ứng chưa được khởi tạo và cũng chưa được gán giá trị gì
 		return 0
 	}
@@ -215,7 +215,7 @@ func (h *Hand) Compare(d *Hand) int { // h: player, d: dealer
 			return result_Xam
 		} else if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_DIA {
 			// Bài cùng bộ đầu người là hòa
-			if calculatePoint_withFactValueCard(h.first) == calculatePoint_withFactValueCard(d.first) {
+			if CalculatePoint_withFactValueCard(h.first) == CalculatePoint_withFactValueCard(d.first) {
 				return 0
 			}
 		} else if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_THUNG_PHA_SANH {
@@ -331,8 +331,8 @@ func (h *Hand) GetMaxCardByRanking_ShanType(listCard []*pb.Card) (int, int) {
 
 func CompareHandType_XAM_CO(playerCard, dealerCard []*pb.Card) int {
 	// lấy ra value của 3 lá bài
-	sum_playerCard := calculatePoint_withFactValueCard(playerCard)
-	sum_dealerCard := calculatePoint_withFactValueCard(dealerCard)
+	sum_playerCard := CalculatePoint_withFactValueCard(playerCard)
+	sum_dealerCard := CalculatePoint_withFactValueCard(dealerCard)
 	if sum_playerCard == 3 {
 		return 1
 	}
@@ -376,8 +376,8 @@ var handRanking_ThungPhaXanh = map[string]int{
 // }
 
 func CompareHandType_THUNG_PHA_SANH_byRank(hand1, hand2 []*pb.Card) int {
-	sum_hand1 := calculatePoint_withFactValueCard(hand1)
-	sum_hand2 := calculatePoint_withFactValueCard(hand2)
+	sum_hand1 := CalculatePoint_withFactValueCard(hand1)
+	sum_hand2 := CalculatePoint_withFactValueCard(hand2)
 
 	// Compare based on predefined ranking
 	if sum_hand1 > sum_hand2 {
