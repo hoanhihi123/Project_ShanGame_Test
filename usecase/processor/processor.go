@@ -136,7 +136,7 @@ func (p *Processor) ProcessTurnbase(ctx context.Context,
 			s.SetAllowInsurance(false)
 			s.SetAllowAction(false)
 		case "playing":
-			if s.GetDealerHand().First.Type == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_SHAN {
+			if s.GetDealerHand().First.Type == pb.ShanGameHandType_SHANGAME_HAND_TYPE_SHAN {
 				s.SetUpdateFinish(s.CalcGameFinish())
 				return
 			}

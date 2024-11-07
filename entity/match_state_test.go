@@ -23,7 +23,7 @@ var default_presence = []struct {
 }
 
 var userBetsAdd = []pb.ShanGameBet{
-	{UserId: "", Chips: 12000},
+	// {UserId: "", Chips: 12000},
 	{UserId: "User5_dealer", Chips: 10000},
 	{UserId: "User1", Chips: 5000},
 	{UserId: "User2", Chips: 7000},
@@ -31,18 +31,18 @@ var userBetsAdd = []pb.ShanGameBet{
 	{UserId: "User4", Chips: 15000},
 	{UserId: "User6", Chips: 2000},
 	{UserId: "User7", Chips: 3000},
-	{UserId: "User8", Chips: 10000},
+	// {UserId: "User8", Chips: 10000},
 }
 
 var userBetsSubstract = []pb.ShanGameBet{
-	{UserId: "", Chips: 6000},
+	// {UserId: "", Chips: 6000},
 	{UserId: "User5_dealer", Chips: 5000},
 	{UserId: "User1", Chips: 2000},
 	{UserId: "User2", Chips: 1000},
-	// {UserId: "User3", Chips: 6000},
-	// {UserId: "User4", Chips: 2000},
-	// {UserId: "User6", Chips: 500},
-	// {UserId: "User7", Chips: 1000},
+	{UserId: "User3", Chips: 6000},
+	{UserId: "User4", Chips: 2000},
+	{UserId: "User6", Chips: 500},
+	{UserId: "User7", Chips: 1000},
 	// {UserId: "User8", Chips: 9000},
 }
 
@@ -60,27 +60,30 @@ cac truong hop co the check
 */
 func TestMatchState_hoan(t *testing.T) {
 
-	fmt.Println("Start game...")
+	fmt.Println("Preparing to play game...")
 	s := NewMatchState(&MatchLabel{
 		Open:     2,
-		Bet:      1000,
+		Bet:      MinBetAllowed,
 		Code:     "test",
 		Name:     "test_table",
 		Password: "",
-		MaxSize:  7,
+		MaxSize:  MaxPresences,
 	})
-	fmt.Printf("MatchState sau khi khởi tạo: %+v", s)
+	fmt.Printf("Thiết lập thông số cho 1 trận đấu...")
 
-	s.playerIsDealer = "" // server is dealer
-
-	// khoi tao match
-	fmt.Println("khởi tạo trận đấu .... ")
 	// user request vào game
+	fmt.Println("khởi tạo trận đấu .... ")
 
 	fmt.Println("Các user join vào game vào precense of match ....")
-	for userId, precense := range default_presence {
-		s.Presences.Put(userId, precense)
+	for _, precense := range default_presence {
+		s.Presences.Put(precense.UserId, precense.MyPrecense)
 	}
+
+	// fmt.Println("Các user hiện tại đang có mặt tại hệ thống ....")
+	// i := s.Presences.Iterator()
+	// for i.Next() {
+	// 	fmt.Println("giá trị key trong presence: ", i.Key(), ", value: ", i.Value())
+	// }
 
 	// kiểm tra xem user có đủ điều kiện làm Dealer hay không ?
 	// giả sử player muốn làm dealer
@@ -88,6 +91,7 @@ func TestMatchState_hoan(t *testing.T) {
 	s.playerIsDealer = ""
 	// 	trước khi vào trận đấu  - player xin làm dealer
 	if s.playerIsDealer == "" { // server is  dealer
+		// fmt.Println("chạy vào đăng ký làm dealer")
 		// lấy chips của user muốn xin làm dealer
 		s.Player_RegisterDealer("User5_dealer")
 	} else { // player is dealer - player khác xin làm dealer thay thế
@@ -101,7 +105,7 @@ func TestMatchState_hoan(t *testing.T) {
 
 	s.Init()
 	// set info of player with fake precencese
-	fmt.Println("khởi tạo các user join vào trận đấu để chơi .... ")
+	fmt.Println("\nkhởi tạo các user join vào trận đấu để chơi .... ")
 
 	// khi nào thì check maxPresence ?
 	fmt.Println("Thêm các presence vào playingPrecense")
@@ -131,7 +135,7 @@ func TestMatchState_hoan(t *testing.T) {
 		s.setSubstractBet_forPlayerAndDealer(userBetsSubstract)
 
 		// lấy ra mức cược player đã đặt theo id tương ứng
-		fmt.Println("\n\nXem thông tin các mức cược của các player - sau khi trừ đi mức cược ")
+		fmt.Println("\nXem thông tin các mức cược của các player - sau khi trừ đi mức cược ")
 		if len(s.userBets) > 0 {
 			for userId, player := range s.userBets {
 
@@ -142,7 +146,7 @@ func TestMatchState_hoan(t *testing.T) {
 		log.Fatal("Allow Bet chưa được cho phép cược!")
 	}
 
-	fmt.Println("user request as player .... click deal ")
+	fmt.Println("\nuser request as player .... click deal ")
 
 	s.deck.Shuffle()
 

@@ -8,12 +8,12 @@ import "chinese_poker_game_api.proto";
 import "common_api.proto";
 
 enum ShanGameHandType {
-    SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_UNSPECIFIED         = 0 ;     // chua tung choi game
-    SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_NORMAL              = 1 ;          // Bai binh thuong (tinh diem nhu 3 cây)
-    SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_THUNG_PHA_SANH      = 2 ;  // Thung pha sanh (3 la lien cung nhau cung chat)
-    SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_DIA                 = 3 ;  // 3 con dau nguoi (J, Q, K)
-    SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_XAM_CO              = 4 ;  // Bai Xam co (3 card same)
-    SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_SHAN                = 5 ;  // Bai Shan ( 2 card have sum = 8 or 9)
+    SHANGAME_HAND_TYPE_UNSPECIFIED         = 0 ;     // chua tung choi game
+    SHANGAME_HAND_TYPE_NORMAL              = 1 ;          // Bai binh thuong (tinh diem nhu 3 cây)
+    SHANGAME_HAND_TYPE_THUNG_PHA_SANH      = 2 ;  // Thung pha sanh (3 la lien cung nhau cung chat)
+    SHANGAME_HAND_TYPE_DIA                 = 3 ;  // 3 con dau nguoi (J, Q, K)
+    SHANGAME_HAND_TYPE_XAM_CO              = 4 ;  // Bai Xam co (3 card same)
+    SHANGAME_HAND_TYPE_SHAN                = 5 ;  // Bai Shan ( 2 card have sum = 8 or 9)
      
   }
 

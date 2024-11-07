@@ -1,9 +1,6 @@
 # github.com/bwmarrin/snowflake v0.3.0
 ## explicit
 github.com/bwmarrin/snowflake
-# github.com/davecgh/go-spew v1.1.1
-## explicit
-github.com/davecgh/go-spew/spew
 # github.com/emirpasic/gods v1.18.1
 ## explicit; go 1.2
 github.com/emirpasic/gods/containers
@@ -17,18 +14,14 @@ github.com/emirpasic/gods/utils
 github.com/heroiclabs/nakama-common/api
 github.com/heroiclabs/nakama-common/rtapi
 github.com/heroiclabs/nakama-common/runtime
-# github.com/nakamaFramework/cgp-common v0.0.0-20241028072743-cba00c415a5b
+# github.com/nakamaFramework/cgp-common v0.0.0-20241107020808-127a5c4028dc
 ## explicit; go 1.21
 github.com/nakamaFramework/cgp-common/proto
-# github.com/pmezard/go-difflib v1.0.0
-## explicit
-github.com/pmezard/go-difflib/difflib
 # github.com/qmuntal/stateless v1.6.8
 ## explicit; go 1.19
 github.com/qmuntal/stateless
 # github.com/stretchr/testify v1.9.0
 ## explicit; go 1.17
-github.com/stretchr/testify/assert
 # go.uber.org/atomic v1.11.0
 ## explicit; go 1.18
 go.uber.org/atomic
@@ -95,6 +88,3 @@ google.golang.org/protobuf/runtime/protoimpl
 google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/timestamppb
 google.golang.org/protobuf/types/known/wrapperspb
-# gopkg.in/yaml.v3 v3.0.1
-## explicit
-gopkg.in/yaml.v3

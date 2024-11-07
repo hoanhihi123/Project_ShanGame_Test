@@ -90,14 +90,14 @@ func (h *Hand) getCardName_CardSuitOfOneDeck() ([]string, []string) {
 
 	for i := 0; i < len(h.first); i++ {
 		rankName := h.first[i].GetRank().String() // name of card
-		fmt.Println("\n Rank name = ", rankName)
+		// fmt.Println("\n Rank name = ", rankName)
 		index := strings.LastIndex(rankName, string('_'))
 
 		arr_Card_Name = append(arr_Card_Name, rankName[index+1:])
-		fmt.Printf("Card name: %+v", arr_Card_Name)
+		// fmt.Printf("Card name: %+v", arr_Card_Name)
 
 		arr_Card_Suit = append(arr_Card_Suit, h.first[i].Suit.String())
-		fmt.Printf("Card suit: %+v", arr_Card_Suit[i])
+		// fmt.Printf("Card suit: %+v", arr_Card_Suit[i])
 	}
 
 	return arr_Card_Name, arr_Card_Suit
@@ -159,37 +159,37 @@ func (h *Hand) Eval() (int32, pb.ShanGameHandType) { // return point, type of ha
 	point = calculatePoint(h.first)
 	// shan
 	if h.isCheckHandType_SHAN(point) {
-		fmt.Println("Bộ bài của user: ", h.userId, " thuộc loại Shan", ", với point = ", point)
-		return point, pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_SHAN // shan
+		// fmt.Println("Bộ bài của user: ", h.userId, " thuộc loại Shan", ", với point = ", point)
+		return point, pb.ShanGameHandType_SHANGAME_HAND_TYPE_SHAN // shan
 	} else if len(h.first) == 3 {
 		// Bài xám cô (3 lá giống nhau) // giong nhau ve luong, list cac gia tri cua la bai
 		arr_Card_Name, arr_Card_Suit := h.getCardName_CardSuitOfOneDeck()
 
-		fmt.Println("\nXem thông tin lá bài - (tên lá bài): ", arr_Card_Name[0], ", ", arr_Card_Name[1], ", ", arr_Card_Name[2])
-		fmt.Println("Xem thông tin lá bài - (loại lá bài): ", arr_Card_Suit[0], ", ", arr_Card_Suit[1], ", ", arr_Card_Suit[2])
+		// fmt.Println("\nXem thông tin lá bài - (tên lá bài): ", arr_Card_Name[0], ", ", arr_Card_Name[1], ", ", arr_Card_Name[2])
+		// fmt.Println("Xem thông tin lá bài - (loại lá bài): ", arr_Card_Suit[0], ", ", arr_Card_Suit[1], ", ", arr_Card_Suit[2])
 
 		// xam co Bài có 3 lá giống nhau , ví dụ: AAA > KKK > QQQ > … > 333 > 222
 		if h.isCheck_sameCardName() {
 
-			return point, pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_XAM_CO
+			return point, pb.ShanGameHandType_SHANGAME_HAND_TYPE_XAM_CO
 
 		} else if h.isCheckHandType_DIA(arr_Card_Name) { // 3 con đầu người (J, Q, K)
 
-			return point, pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_DIA
+			return point, pb.ShanGameHandType_SHANGAME_HAND_TYPE_DIA
 
 		} else { // Thùng phá sảnh (3 lá liền nhau & cùng chất)
 
 			if h.isCheck_HandType_THUNG_PHA_SANH(arr_Card_Suit) {
-				return point, pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_THUNG_PHA_SANH // Thùng phá sảnh
+				return point, pb.ShanGameHandType_SHANGAME_HAND_TYPE_THUNG_PHA_SANH // Thùng phá sảnh
 			}
 		}
 	} else {
-		fmt.Println("Bộ bài của user: ", h.userId, " thuộc loại: Normal", ", với point = ", point)
-		return point, pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_NORMAL // normal
+		// fmt.Println("Bộ bài của user: ", h.userId, " thuộc loại: Normal", ", với point = ", point)
+		return point, pb.ShanGameHandType_SHANGAME_HAND_TYPE_NORMAL // normal
 	}
 
-	fmt.Println("Bộ bài của user: ", h.userId, " thuộc loại: Normal", ", với point = ", point)
-	return point, pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_NORMAL
+	// fmt.Println("Bộ bài của user: ", h.userId, " thuộc loại: Normal", ", với point = ", point)
+	return point, pb.ShanGameHandType_SHANGAME_HAND_TYPE_NORMAL
 }
 
 // them bai vao bo bai
@@ -200,25 +200,25 @@ func (h *Hand) AddCards(c []*pb.Card) {
 // comparing player hand with dealer hand, -1 -> lost, 1 -> win, 0 -> tie
 // return result compare user with dealer
 func (h *Hand) Compare(d *Hand) int { // h: player, d: dealer
-	fmt.Println("Thực hiện so sánh: ", h.userId, " với ", d.userId)
+	fmt.Println("\n\n=====Thực hiện so sánh: player_", h.userId, " với dealer_ ", d.userId)
 	player_point, player_handType := h.Eval()
 	dealer_point, dealer_handType := d.Eval()
 	fmt.Println("\nPoint of player - ", h.userId, " = ", player_point, " , Type of Hand - ", player_handType)
-	fmt.Println("\nPoint of player - ", d.userId, " = ", dealer_point, " , Type of Hand - ", dealer_handType)
+	fmt.Println("Point of player - ", d.userId, " = ", dealer_point, " , Type of Hand - ", dealer_handType)
 
 	if int(player_handType) > int(dealer_handType) { // so sanh type , type trong nay cung chua gia tri duoc dinh nghia trong file blackjack_api.pb.go
 		return 1
 	} else if int(player_handType) == int(dealer_handType) { // neu gia tri type = nhau
 		// if type = xam => ko so sanh point nhu thong thuong duoc
-		if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_XAM_CO {
+		if player_handType == pb.ShanGameHandType_SHANGAME_HAND_TYPE_XAM_CO {
 			result_Xam := CompareHandType_XAM_CO(h.first, d.first)
 			return result_Xam
-		} else if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_DIA {
+		} else if player_handType == pb.ShanGameHandType_SHANGAME_HAND_TYPE_DIA {
 			// Bài cùng bộ đầu người là hòa
 			if CalculatePoint_withFactValueCard(h.first) == CalculatePoint_withFactValueCard(d.first) {
 				return 0
 			}
-		} else if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_THUNG_PHA_SANH {
+		} else if player_handType == pb.ShanGameHandType_SHANGAME_HAND_TYPE_THUNG_PHA_SANH {
 			// thung pha sanh
 			// so sanh theo thu tu = gia tri
 			result := CompareHandType_THUNG_PHA_SANH_byRank(h.first, d.first)
@@ -236,7 +236,7 @@ func (h *Hand) Compare(d *Hand) int { // h: player, d: dealer
 			} else if player_point < dealer_point {
 				return -1
 			} else { // p_point = d_point && p_type = d_type
-				if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_SHAN {
+				if player_handType == pb.ShanGameHandType_SHANGAME_HAND_TYPE_SHAN {
 					// thuc hien ham so sanh tai day
 					return h.compareBySuit(d.first)
 				}
@@ -252,8 +252,8 @@ func (h *Hand) Compare(d *Hand) int { // h: player, d: dealer
 func (h *Hand) GetTiLeThangThuaPlayer() int {
 	player_point, player_handType := h.Eval()
 
-	fmt.Println("point of player ", player_point, "List card of player", h.first)
-	if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_SHAN {
+	// fmt.Println("point of player ", player_point, "List card of player", h.first)
+	if player_handType == pb.ShanGameHandType_SHANGAME_HAND_TYPE_SHAN && player_point >= 0 {
 		// Tỉ lệ ăn: 1 hoặc  2. Cụ thể: Nhân 2 khi có 2 con cùng chất hoặc là 1 đôi (đôi 4 hoặc đôi 9)
 		isCheck := false
 		// cùng chất
@@ -265,9 +265,9 @@ func (h *Hand) GetTiLeThangThuaPlayer() int {
 		if !isCheck {
 			return 1
 		}
-	} else if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_XAM_CO {
+	} else if player_handType == pb.ShanGameHandType_SHANGAME_HAND_TYPE_XAM_CO {
 		return 5
-	} else if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_DIA {
+	} else if player_handType == pb.ShanGameHandType_SHANGAME_HAND_TYPE_DIA {
 		// Tỉ lệ ăn: 3 hoặc 5.
 		// Cụ thể: 3 lá đầu người cùng chất (JQK cơ, bích, rô, tép) x5;
 		// 3 lá đầu người khác chất x3
@@ -275,7 +275,7 @@ func (h *Hand) GetTiLeThangThuaPlayer() int {
 			return 5
 		}
 		return 3
-	} else if player_handType == pb.ShanGameHandType_SHANGAME_HANDTYPE_SHANGAME_HAND_TYPE_THUNG_PHA_SANH {
+	} else if player_handType == pb.ShanGameHandType_SHANGAME_HAND_TYPE_THUNG_PHA_SANH {
 		return 5
 	} else {
 		// -> "x2" khi bài có đúng 2 quân và là 2 quân cùng chất hoặc là 1 đôi (Không nhận lá bài thứ 3).
@@ -345,35 +345,6 @@ func CompareHandType_XAM_CO(playerCard, dealerCard []*pb.Card) int {
 	// with type hand : XAM_CO khong co truong hop = nhau
 
 }
-
-var handRanking_ThungPhaXanh = map[string]int{
-	"QKA":  10, // Highest rank
-	"10JQ": 9,
-	"910J": 8,
-	"8910": 7,
-	"789":  6,
-	"678":  5,
-	"567":  4,
-	"456":  3,
-	"345":  2,
-	"234":  1, // Lowest rank
-}
-
-// var handRanking = map[string]int{
-// 	"AAA":    13, // Highest rank
-// 	"KKK":    12,
-// 	"QQQ":    11,
-// 	"JJJ":    10,
-// 	"101010": 9, // T represents 10
-// 	"999":    8,
-// 	"888":    7,
-// 	"777":    6,
-// 	"666":    5,
-// 	"555":    4,
-// 	"444":    3,
-// 	"333":    2,
-// 	"222":    1, // Lowest rank
-// }
 
 func CompareHandType_THUNG_PHA_SANH_byRank(hand1, hand2 []*pb.Card) int {
 	sum_hand1 := CalculatePoint_withFactValueCard(hand1)
