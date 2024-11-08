@@ -3,6 +3,8 @@ package entity
 import (
 	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/emirpasic/gods/maps/linkedhashmap"
 	pb "github.com/nakamaFramework/cgp-common/proto"
@@ -179,6 +181,8 @@ func (s *MatchState) playerNotExits_inUserBets(userId string) {
 			UserId: userId,
 			First:  0,
 		}
+	} else {
+		log.Println("\nPlayer đã đặt cược trước đó = ", s.userBets[userId].First)
 	}
 }
 
@@ -826,17 +830,16 @@ func (s *MatchState) chiaBaiChoPlayerTuongUng() {
 			// chưa check trường hợp userBet là userHand của PlayerIsDealer
 			// User1 tại sao set value lại lỗi do chưa khởi tạo giá trị từ trước ?
 
-			// chia bài cho dealerIsPlayer or serverIsDealer
-			if userBet.UserId == s.playerIsDealer { // chia bài cho dealer: chia 1 or 2 lá tương ứng cho dealer
+			// chia bài cho dealer
+			if userBet.UserId == s.playerIsDealer {
 				// trường hợp chưa được chia lá bài nào
-				// check chia max <=3
 				fmt.Println("\nChia bài cho dealer, với id = " + userBet.UserId)
-				if len(s.dealerHand.first) == 0 && s.dealerHand.userId == "" { // dealerhand chưa được khởi tạo và thêm giá trị nào
+				if len(s.dealerHand.first) == 0 { // dealerhand chưa được khởi tạo và thêm giá trị nào
 					s.dealerHand = &Hand{
 						userId: userBet.UserId,
 						first:  listCard_chia2La.Cards,
 					}
-				} else if len(s.dealerHand.first) <= 3 && s.dealerHand.userId == "" {
+				} else if len(s.dealerHand.first) == 2 {
 					listCard_addOneCard, err := s.deck.Deal(1)
 					if err != nil {
 						log.Fatal("Lỗi khi chia bài : ", err, " , khi chia bài cho user: ", userBet.UserId)
@@ -895,7 +898,7 @@ func (s *MatchState) Player_RegisterDealer(userId_param string) {
 		if !ok2 {
 			fmt.Println("Presence not have type MyPrecence...")
 		} else {
-			if presence.Chips > int64(s.Label.Bet) { // so sánh với mức cược tối thiểu của trận đấu
+			if presence.Chips > int64(s.Label.Bet*10) { // so sánh với mức cược tối thiểu của trận đấu
 				s.playerIsDealer = userId_param
 				s.POT = presence.Chips // set banker = tổng tiền trong ví của player đang có
 				s.dealerHand = &Hand{
@@ -909,6 +912,12 @@ func (s *MatchState) Player_RegisterDealer(userId_param string) {
 					s.POT = server_presence.Chips // set chips của server đặt cược vào POT
 					s.dealerHand = &Hand{
 						userId: "",
+					}
+
+					// set bet for server
+					s.userBets[""] = &pb.ShanGamePlayerBet{
+						UserId: "",
+						First:  10000,
 					}
 				}
 			}
@@ -943,52 +952,67 @@ func (s *MatchState) set_PlayerCanBeDealer(idPlayerWantBeDealer string) {
 	}
 }
 
-func (s *MatchState) addPresence_PlayingPrecense_InMatch() {
+func (s *MatchState) addPresence_ToPlayingPrecense_InMatch() {
+	// add dữ liệu từ precense vào playingprecense
 	if s.Presences.Size() > 0 {
-		i := s.Presences.Iterator()
-		for i.Next() {
-			// check size match
-			if s.PlayingPresences.Size() > 6 {
-				fmt.Println("Match is full, Can't add more player ... ")
-				break
+		for _, key := range s.Presences.Keys() {
+			key, ok := key.(string)
+			value, ok := s.Presences.Get(key)
+			presence := value.(MyPrecense)
+			if ok {
+				chipsUser := presence.Chips
+				if chipsUser >= int64(s.Label.Bet)*10 {
+					// khi nào thì ko add server từ precen vào playing , tất cả trường hợp
+					if key == "" {
+						continue
+					}
+					if s.PlayingPresences.Size() <= 7 {
+						s.PlayingPresences.Put(key, presence)
+					}
+				}
 			}
-			// check trường hợp có add server vào game hay không?
-			if i.Key() == "" && s.playerIsDealer != "" { // trường hợp server là player, và isPlayingDealer có giá trị idPlayer => không thêm server vào ván game
-				continue
-			}
-			s.PlayingPresences.Put(i.Key(), i.Value())
+
 		}
-	} else {
-		fmt.Println("Hiện tại không có người chơi nào, cần ít nhất 1 user để chơi game!")
-		return
 	}
 }
 
-func (s *MatchState) setAddBet_forPlayerAndDealer(userBets []pb.ShanGameBet) {
-	if len(userBets) > 0 {
-		for _, userBet := range userBets {
-			s.AddBetOfUserBet(&pb.ShanGameBet{
-				UserId: userBet.UserId,
-				Chips:  userBet.Chips,
-			})
+func (s *MatchState) setAddBet_forPlayerAndDealer() {
+
+	// duyệt danh sách playing precense => set mức đặt cược theo % đặt cược random
+	for _, key := range s.PlayingPresences.Keys() {
+		userId, ok := key.(string)
+		value, ok := s.PlayingPresences.Get(key)
+		player := value.(MyPrecense)
+		if ok {
+			percentBet := int64(s.randDomPercentBet())
+			fmt.Println("Percent Bet : ", percentBet)
+			chipsUserBet := player.Chips * (100 - percentBet) / 100
+			fmt.Println("UserId = ", userId, ", Đặt cược = ", chipsUserBet, " tiền trong ví trước đó = ", player.Chips)
+			// if userId này chưa tồn tại => khởi tạo 1 userBet rỗng
+			s.playerNotExits_inUserBets(userId)
+
+			s.AddBet_inUserBets(userId, chipsUserBet)
+
+			s.SubstractMoney_inWallet_playingPresence(userId, chipsUserBet)
+
 		}
-	} else {
-		log.Fatal("Không có player nào đặt cược!")
+
+	}
+
+}
+
+func (s *MatchState) setSubstractBet_forPlayerAndDealer() {
+	if len(s.userBets) > 0 {
+		for _, userBet := range s.userBets {
+			chipsUserBet := s.userBets[userBet.UserId].First * (100 - int64(s.randDomPercentBet())) / 100
+			fmt.Println("UserId = ", userBet.UserId, ", Đặt cược = ", chipsUserBet, " tiền đặt cược trước đó = ", userBet.First)
+
+			s.SubstractBet_inUserBets(userBet.UserId, chipsUserBet)
+			s.AddMoney_inWallet_playingPresence(userBet.UserId, chipsUserBet)
+		}
 	}
 }
 
-func (s *MatchState) setSubstractBet_forPlayerAndDealer(userBets []pb.ShanGameBet) {
-	if len(userBets) > 0 {
-		for _, userBet := range userBets {
-			s.SubstractBetOfUserBet(&pb.ShanGameBet{
-				UserId: userBet.UserId,
-				Chips:  userBet.Chips,
-			})
-		}
-	} else {
-		log.Fatal("Không có player nào giảm mức đặt cược!")
-	}
-}
 func (s *MatchState) checkDealerHand_haveTypeShan() bool {
 	dealerPoint, dealerHand := s.dealerHand.Eval() // tính điểm cho dealer và lấy ra type của nó
 	return dealerPoint > 0 && dealerHand == pb.ShanGameHandType_SHANGAME_HAND_TYPE_SHAN
@@ -1011,7 +1035,7 @@ func (s *MatchState) devideCardForPlayer(userId string, numberCard int) {
 		}
 		fmt.Printf("Bộ bài sau khi rút lần 2 của user 1: \n%+v", s.userHands[userId].first)
 	} else {
-		log.Println("Player : ", userId, " này không có trong trận đấu")
+		log.Println("Player : ", userId, " này không có trong_UserHand, các player tham gia trận đấu ")
 	}
 
 }
@@ -1037,4 +1061,17 @@ func (s *MatchState) DeletePlayerAtUserBetIfBalance_equalZero() {
 		s.PlayingPresences.Remove(userId_delete) // => xóa user khỏi playingPrecence: có vì nó đại diện cho các player đang chơi game
 	}
 
+}
+
+func (s *MatchState) randDomPercentBet() int {
+	arr_Bet := []int{1, 10, 15, 20, 50, 70, 100}
+	rand.Seed(time.Now().Unix())
+	randIndex := rand.Intn(len(arr_Bet))
+	return arr_Bet[randIndex]
+}
+
+func (s *MatchState) setBetForServerIsDealer() {
+	if s.playerIsDealer == "" {
+
+	}
 }

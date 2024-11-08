@@ -12,38 +12,15 @@ var default_presence = []struct {
 	UserId     string
 	MyPrecense MyPrecense
 }{
+	{"", MyPrecense{Chips: 1000000, VipLevel: 3}},
 	{"User1", MyPrecense{Chips: 100000, VipLevel: 1}},
-	{"User2", MyPrecense{Chips: 200000, VipLevel: 2}},
-	{"User3", MyPrecense{Chips: 150000, VipLevel: 5}},
-	{"User4", MyPrecense{Chips: 15000, VipLevel: 6}},
-	{"User5_dealer", MyPrecense{Chips: 10000, VipLevel: 7}},
-	{"User6", MyPrecense{Chips: 90000, VipLevel: 3}},
-	{"User7", MyPrecense{Chips: 26000, VipLevel: 4}},
-	{"User8", MyPrecense{Chips: 15000, VipLevel: 9}},
-}
-
-var userBetsAdd = []pb.ShanGameBet{
-	// {UserId: "", Chips: 12000},
-	{UserId: "User5_dealer", Chips: 10000},
-	{UserId: "User1", Chips: 5000},
-	{UserId: "User2", Chips: 7000},
-	{UserId: "User3", Chips: 12000},
-	{UserId: "User4", Chips: 15000},
-	{UserId: "User6", Chips: 2000},
-	{UserId: "User7", Chips: 3000},
-	// {UserId: "User8", Chips: 10000},
-}
-
-var userBetsSubstract = []pb.ShanGameBet{
-	// {UserId: "", Chips: 6000},
-	{UserId: "User5_dealer", Chips: 5000},
-	{UserId: "User1", Chips: 2000},
-	{UserId: "User2", Chips: 1000},
-	{UserId: "User3", Chips: 6000},
-	{UserId: "User4", Chips: 2000},
-	{UserId: "User6", Chips: 500},
-	{UserId: "User7", Chips: 1000},
-	// {UserId: "User8", Chips: 9000},
+	{"User2", MyPrecense{Chips: 2000000, VipLevel: 2}},
+	{"User3", MyPrecense{Chips: 1500000, VipLevel: 5}},
+	{"User4", MyPrecense{Chips: 150000, VipLevel: 6}},
+	{"User5_dealer", MyPrecense{Chips: 6000, VipLevel: 7}},
+	{"User6", MyPrecense{Chips: 900000, VipLevel: 3}},
+	{"User7", MyPrecense{Chips: 260000, VipLevel: 4}},
+	{"User8", MyPrecense{Chips: 150000, VipLevel: 9}},
 }
 
 /*
@@ -63,7 +40,7 @@ func TestMatchState_hoan(t *testing.T) {
 	fmt.Println("Preparing to play game...")
 	s := NewMatchState(&MatchLabel{
 		Open:     2,
-		Bet:      MinBetAllowed,
+		Bet:      5000,
 		Code:     "test",
 		Name:     "test_table",
 		Password: "",
@@ -78,12 +55,6 @@ func TestMatchState_hoan(t *testing.T) {
 	for _, precense := range default_presence {
 		s.Presences.Put(precense.UserId, precense.MyPrecense)
 	}
-
-	// fmt.Println("Các user hiện tại đang có mặt tại hệ thống ....")
-	// i := s.Presences.Iterator()
-	// for i.Next() {
-	// 	fmt.Println("giá trị key trong presence: ", i.Key(), ", value: ", i.Value())
-	// }
 
 	// kiểm tra xem user có đủ điều kiện làm Dealer hay không ?
 	// giả sử player muốn làm dealer
@@ -109,7 +80,7 @@ func TestMatchState_hoan(t *testing.T) {
 
 	// khi nào thì check maxPresence ?
 	fmt.Println("Thêm các presence vào playingPrecense")
-	s.addPresence_PlayingPrecense_InMatch()
+	s.addPresence_ToPlayingPrecense_InMatch()
 	fmt.Println("Số lượng player được thêm vào _ playingPrecence: ", s.PlayingPresences.Size())
 
 	// them muc cuoc cho user ( chon thong thuong, + - )
@@ -123,7 +94,7 @@ func TestMatchState_hoan(t *testing.T) {
 		fmt.Println("Thiết lập mức cược của PlayerIsDealer ... ")
 		fmt.Println("Thiết lập mức cược cho các player ... ")
 
-		s.setAddBet_forPlayerAndDealer(userBetsAdd)
+		s.setAddBet_forPlayerAndDealer()
 		fmt.Println("Xem thông tin các mức cược của các player - khi add mức cược ")
 		if len(s.userBets) > 0 {
 			for userId, player := range s.userBets {
@@ -132,7 +103,7 @@ func TestMatchState_hoan(t *testing.T) {
 			}
 		}
 
-		s.setSubstractBet_forPlayerAndDealer(userBetsSubstract)
+		s.setSubstractBet_forPlayerAndDealer()
 
 		// lấy ra mức cược player đã đặt theo id tương ứng
 		fmt.Println("\nXem thông tin các mức cược của các player - sau khi trừ đi mức cược ")
@@ -152,13 +123,13 @@ func TestMatchState_hoan(t *testing.T) {
 
 	fmt.Println("kiểm tra các user nào không đưa ra mức cược => xóa khỏi userBet và playingPrecence...")
 	s.DeletePlayerAtUserBetIfBalance_equalZero()
+	fmt.Println("Các user còn lại sau khi kiểm tra mức cược có > 0 hay ko ? = ", len(s.userBets))
 
 	fmt.Println("Chia bài .... cho các user đã đặt cược trong ván game .....")
 	s.chiaBaiChoPlayerTuongUng()
 
 	fmt.Println("Số lượng userHand : ", len(s.userHands))
-	fmt.Println("Số lượng dealerHand(= 0 nếu server is Dealer) : ", len(s.dealerHand.first))
-	fmt.Println("Lần lượt user : đưa ra lựa chọn bốc bài tiếp hay không ?")
+	fmt.Println("\nLần lượt user : đưa ra lựa chọn bốc bài tiếp hay không ?")
 
 	// kiểm tra bài của dealer = shan ko ?
 	if len(s.userHands) > 0 {
