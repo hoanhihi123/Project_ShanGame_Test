@@ -149,7 +149,7 @@ func (h *Hand) isCheck_3ConsecutiveCards() bool { // check 3 card liền nhau
 
 func (h *Hand) isCheck_HandType_THUNG_PHA_SANH(arr_card_suit []string) bool {
 	h.sordDeck()
-	fmt.Printf("\nBộ bài sau khi sắp xếp: %+v", h.first)
+	// fmt.Printf("\nBộ bài sau khi sắp xếp: %+v", h.first)
 	return h.isCheck_SameCardSuit(arr_card_suit) && h.isCheck_3ConsecutiveCards()
 }
 
@@ -200,11 +200,11 @@ func (h *Hand) AddCards(c []*pb.Card) {
 // comparing player hand with dealer hand, -1 -> lost, 1 -> win, 0 -> tie
 // return result compare user with dealer
 func (h *Hand) Compare(d *Hand) int { // h: player, d: dealer
-	fmt.Println("\n\n=====Thực hiện so sánh: player_", h.userId, " với dealer_ ", d.userId)
+	// fmt.Println("\n\n=====Thực hiện so sánh: player_", h.userId, " với dealer_ ", d.userId)
 	player_point, player_handType := h.Eval()
 	dealer_point, dealer_handType := d.Eval()
-	fmt.Println("\nPoint of player - ", h.userId, " = ", player_point, " , Type of Hand - ", player_handType)
-	fmt.Println("Point of player - ", d.userId, " = ", dealer_point, " , Type of Hand - ", dealer_handType)
+	// fmt.Println("\nPoint of player - ", h.userId, " = ", player_point, " , Type of Hand - ", player_handType)
+	// fmt.Println("Point of player - ", d.userId, " = ", dealer_point, " , Type of Hand - ", dealer_handType)
 
 	if int(player_handType) > int(dealer_handType) { // so sanh type , type trong nay cung chua gia tri duoc dinh nghia trong file blackjack_api.pb.go
 		return 1

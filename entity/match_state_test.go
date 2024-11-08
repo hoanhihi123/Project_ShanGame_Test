@@ -17,7 +17,7 @@ var default_presence = []struct {
 	{"User2", MyPrecense{Chips: 2000000, VipLevel: 2}},
 	{"User3", MyPrecense{Chips: 1500000, VipLevel: 5}},
 	{"User4", MyPrecense{Chips: 150000, VipLevel: 6}},
-	{"User5_dealer", MyPrecense{Chips: 6000, VipLevel: 7}},
+	{"User5_dealer", MyPrecense{Chips: 45000, VipLevel: 7}},
 	{"User6", MyPrecense{Chips: 900000, VipLevel: 3}},
 	{"User7", MyPrecense{Chips: 260000, VipLevel: 4}},
 	{"User8", MyPrecense{Chips: 150000, VipLevel: 9}},
@@ -125,10 +125,15 @@ func TestMatchState_hoan(t *testing.T) {
 	s.DeletePlayerAtUserBetIfBalance_equalZero()
 	fmt.Println("Các user còn lại sau khi kiểm tra mức cược có > 0 hay ko ? = ", len(s.userBets))
 
+	// duyệt userBet
+	for _, userBet := range s.userBets {
+		fmt.Println("Userid = ", userBet, ", value = ", userBet.First)
+	}
+
 	fmt.Println("Chia bài .... cho các user đã đặt cược trong ván game .....")
 	s.chiaBaiChoPlayerTuongUng()
 
-	fmt.Println("Số lượng userHand : ", len(s.userHands))
+	fmt.Println("\nSố lượng userHand : ", len(s.userHands))
 	fmt.Println("\nLần lượt user : đưa ra lựa chọn bốc bài tiếp hay không ?")
 
 	// kiểm tra bài của dealer = shan ko ?
@@ -159,6 +164,7 @@ func TestMatchState_hoan(t *testing.T) {
 	// số tiền mà user khi win thôi (dựa vào presence / playingprecense)
 	// và khi thay đổi thì phần tiền (wallet of player đã được cập nhật hay chưa?)
 
-	fmt.Printf("====END GAME====\n%v", s.CalcGameFinish())
+	// fmt.Printf("====END GAME====\n%v", s.CalcGameFinish())
+	s.getResultEndGame()
 
 }
