@@ -1,6 +1,7 @@
 package entity
 
 import (
+	"log"
 	"strconv"
 
 	pb "github.com/nakamaFramework/cgp-common/proto"
@@ -31,4 +32,12 @@ func NewListPlayer(presences []runtime.Presence) ArrPbPlayer {
 		listPlayer = append(listPlayer, p)
 	}
 	return listPlayer
+}
+
+func ConvertWalletFromStrToInteger(player pb.Player) int {
+	chipPlayer, err := strconv.Atoi(player.Wallet)
+	if err != nil {
+		log.Println("can't convert int to string!")
+	}
+	return chipPlayer
 }

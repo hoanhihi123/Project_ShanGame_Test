@@ -249,7 +249,7 @@ func (h *Hand) Compare(d *Hand) int { // h: player, d: dealer
 }
 
 // get tỉ lệ thắng thua của bộ bài player
-func (h *Hand) GetTiLeThangThuaPlayer() int {
+func (h *Hand) GetTiLeThangThuaPlayer() int64 {
 	player_point, player_handType := h.Eval()
 
 	// fmt.Println("point of player ", player_point, "List card of player", h.first)
