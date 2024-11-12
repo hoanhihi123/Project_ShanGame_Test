@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"fmt"
 	"strings"
 
 	pb "github.com/nakamaFramework/cgp-common/proto"
@@ -313,9 +312,9 @@ func (h *Hand) GetMaxCardByRanking_ShanType(listCard []*pb.Card) (int, int) {
 	// theo ranking tăng dần: 2,3,4,5,6...10,J,Q,K,A
 	for _, card := range listCard {
 		cardValue := int(card.Rank.Number())
-		fmt.Println("Card value current :", cardValue)
+		// fmt.Println("Card value current :", cardValue)
 		cardSuit := int(card.Suit.Number())
-		fmt.Println("Card suit current :", cardSuit)
+		// fmt.Println("Card suit current :", cardSuit)
 		if cardValue == 1 {
 			return 1, cardSuit
 		}

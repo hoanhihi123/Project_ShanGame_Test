@@ -13,8 +13,8 @@ import (
 const (
 	MinPresences  = 1
 	MaxPresences  = 7
-	MinBetAllowed = 1
-	MaxBetAllowed = 200
+	MinBetAllowed = 10000
+	MaxBetAllowed = 200000
 )
 
 type MatchState struct {
@@ -353,10 +353,6 @@ func (s *MatchState) CalcGameFinish() *pb.ShanGameUpdateFinish {
 
 func (s *MatchState) getResultEndGame() {
 	fmt.Println("\n\n========= End Game : Result =========== ")
-	for _, userBet := range s.userBets {
-		if userBet.UserId != s.playerIsDealer {
-		}
-	}
 
 	for _, userHand := range s.userHands {
 		result := int(0)
@@ -364,7 +360,7 @@ func (s *MatchState) getResultEndGame() {
 			result = userHand.Compare(s.dealerHand) // result after compare each player - dealer
 
 			moneyWallet := s.getMoneyIn_PresencesOfPlayer(userHand.userId)
-			moneyPlay := s.getMoneyIn_PlayingPresencesOfPlayer(userHand.userId)
+			moneyPlay := s.getMoneyOfPlayingPrecense(userHand.userId)
 			betOfUser := s.userBets[userHand.userId].First
 			ketQua := ""
 			if result == 1 {
@@ -381,27 +377,87 @@ func (s *MatchState) getResultEndGame() {
 	}
 	// xóa đi các user ko còn hợp lệ ra khỏi trận đấu
 	s.removePlayerCantPlayContinue()
+
 }
 
 func (s *MatchState) removePlayerCantPlayContinue() {
+	// list player ko còn đủ mức cược tối thiểu để chơi game
+	// và set tiền trong playing về presence
+	arr_userID_deletePlayingPrecence := s.getListPlayerNotConditionPlayContinue()
+
+	// chuyển thông tin của player tại playing về presence
+	// xóa thông tin player tại playingPresence
+	s.removePlayerNotConditionPlayerContinue(arr_userID_deletePlayingPrecence)
+
+	// xóa các player out game trong khi chơi ra khỏi match
+	if len(s.LeavePresences.Values()) > 0 {
+		for _, userIdLeave := range s.LeavePresences.Keys() {
+			userId := userIdLeave.(string)
+			// xóa userHand, userBet, playingPresence
+			delete(s.userHands, userId)
+			s.setBetToPresence(userId)
+			delete(s.userBets, userId)
+			s.PlayingPresences.Remove(userId)
+			// giả sử đã set money of player vào chỗ khác rồi, xóa presences
+			s.Presences.Remove(userId)
+		}
+	}
+	//  presence set thông tin về cho player kiểu gì ? để xóa player ra khỏi hệ thống hoàn toàn chứ
+	// kiểm tra dealerhand còn phù hợp điều kiện làm dealer hay ko ?
+	s.checkDealerCurrentCanPlayContinue()
+
+}
+
+func (s *MatchState) checkDealerCurrentCanPlayContinue() {
+	if s.playerIsDealer != "" {
+		// check dealer còn đủ điều kiện hay ko
+		if s.POT < int64(MinBetAllowed) {
+			s.SetUserChipsInWallet(s.playerIsDealer, s.POT) // set tiền trong ví user hiện tại = chip còn lại
+			s.PlayingPresences.Remove(s.dealerHand.userId)  // remove player khỏi playingPresence
+			s.setBetForServerIsDealer()                     // set lại quyền làm dealer cho server
+		}
+
+	}
+}
+
+func (s *MatchState) removePlayerNotConditionPlayerContinue(arr_userID_deletePlayingPrecence []string) {
+	for _, userID_delete := range arr_userID_deletePlayingPrecence {
+		fmt.Println("user Id delete = ", userID_delete)
+		// xóa userHand, userBet, playingPresence
+		delete(s.userHands, userID_delete)
+		// s.setBetToPresence(userID_delete)
+		delete(s.userBets, userID_delete)
+		s.PlayingPresences.Remove(userID_delete)
+		// giả sử đã set money of player vào chỗ khác rồi, xóa presences
+		s.Presences.Remove(userID_delete)
+	}
+
+}
+
+func (s *MatchState) getListPlayerNotConditionPlayContinue() []string {
 	arr_userID_deletePlayingPrecence := []string{}
 
-	// khi nào thì xóa khỏi game ? khi ko còn khớp với mức cược nữa, mà playingPre = toàn bộ tiền trong ví current
 	for _, key := range s.PlayingPresences.Keys() {
 		userId, ok := key.(string)
 		value, ok := s.Presences.Get(key)
 		presence := value.(MyPrecense)
 		chipPlayerCurrent := presence.Chips
 		if ok {
-			if chipPlayerCurrent < int64(s.Label.Bet) {
+			if chipPlayerCurrent < int64(MinBetAllowed) {
 				s.SetUserChipsInWallet(userId, chipPlayerCurrent) // set tiền trong ví user hiện tại = chip còn lại
 				arr_userID_deletePlayingPrecence = append(arr_userID_deletePlayingPrecence, userId)
 			}
 		}
 	}
-	// xóa user khỏi playingPresence
-	for _, userID_delete := range arr_userID_deletePlayingPrecence {
-		s.PlayingPresences.Remove(userID_delete)
+	return arr_userID_deletePlayingPrecence
+}
+
+func (s *MatchState) setBetToPresence(userId string) {
+	if presence, exist := s.Presences.Get(userId); exist {
+		presence := presence.(MyPrecense)
+
+		presence.Chips += s.GetBetOfUser_byID(userId)
+		s.Presences.Put(userId, presence)
 	}
 
 }
@@ -494,22 +550,26 @@ func (s *MatchState) SetUserChipsInWallet(userID string, moneyChange int64) {
 	}
 }
 
-func (s *MatchState) identifyWhoWin() (userId_playerWin []string, userId_dealerWin []string) {
-	fmt.Println("\nXác định xem danh sách player win, danh sách dealer win")
+func (s *MatchState) identifyWhoWin() ([]string, []string) {
+	fmt.Println("\nXác định danh sách player win, danh sách dealer win")
 
 	// ai thắng hay thua
-	userId_playerWin = []string{}
-	userId_dealerWin = []string{}
+	userId_playerWin := []string{}
+	userId_dealerWin := []string{}
 
 	// duyệt userhand => compare and get list userWin
 	// win, lose, hòa
 	// chỉ xác định ai win => trừ tiền, việc trừ tiền từ ai xử lý ntn nằm ở hàm tính tiền
-	for _, userHand := range s.userHands {
-		result := userHand.Compare(s.dealerHand)
-		if result == 1 {
-			userId_playerWin = append(userId_playerWin, userHand.userId)
-		} else {
-			userId_dealerWin = append(userId_dealerWin, userHand.userId)
+	if len(s.userHands) > 0 {
+		for _, userHand := range s.userHands {
+			result := userHand.Compare(s.dealerHand)
+			if result == 1 {
+				userId_playerWin = append(userId_playerWin, userHand.userId)
+			} else if result == -1 {
+				userId_dealerWin = append(userId_dealerWin, userHand.userId)
+			} else {
+				continue
+			}
 		}
 	}
 
@@ -527,6 +587,7 @@ func (s *MatchState) calMoney_whoWin() {
 	if s.playerIsDealer == "" && len(userIdPlayerWin) > 0 {
 		s.calMoneyForPlayerWin_dealerIsServer(userIdPlayerWin) // tính tiền cho các player win
 	} else {
+		fmt.Println(".... tính tiền thắng cho player .... với dealer is player")
 		s.calMoneyForPlayerWin_dealerIsPlayer(userIdPlayerWin) // tính tiền cho các player win
 	}
 
@@ -537,27 +598,61 @@ func (s *MatchState) calMoney_whoWin() {
 
 }
 
+func (s *MatchState) setMoneyForDealerWin(
+	userIdLose string, moneyDealerWin int64,
+	moneyDealerWin_fact int64, moneySetPlayerLose int64) {
+	if s.playerIsDealer != "" {
+		s.addMoneyForDealerWin(moneyDealerWin_fact)
+	} else {
+		s.addMoneyForDealerWin(moneyDealerWin)
+	}
+	// + tiền dealer win
+	s.substractMoneyForPlayerToPlayingPrecence(userIdLose, moneySetPlayerLose) // - tiền player lose
+
+}
+
 // chỉ khác nhau là cộng tiền vào đâu thôi
 func (s *MatchState) calMoneyFor_dealerWin(userIdLoses []string) {
+	fmt.Println("\nTính tiền thắng cho dealer win - tại func calMoneyFor_dealerWin() ")
 	for _, userIdLose := range userIdLoses {
-		tiLeThangDealer := s.dealerHand.GetTiLeThangThuaPlayer()
-		moneyDealerWin := s.userBets[""].First * int64(tiLeThangDealer)
+		fmt.Println("User_", userIdLose, " LOSE dealer_", s.playerIsDealer)
 		moneyInWalletOfPlayer := int64(s.getMoneyIn_PlayingPresencesOfPlayer(userIdLose))
+		fmt.Println("Tiền trong ví còn lại của player = ", moneyInWalletOfPlayer)
 		moneyBetOfPlayer := s.GetBetOfUser_byID(userIdLose)
+
+		fmt.Println("Tiền đặt cược của player = ", moneyBetOfPlayer)
+		tiLeThangDealer := s.dealerHand.GetTiLeThangThuaPlayer()
+		fmt.Println("Tỉ lệ thắng dealer = ", tiLeThangDealer)
+		fmt.Println("userId_dealerHand = ", s.dealerHand.userId)
+		// tiền của dealer lưu tại đâu
+		moneyDealerWin := s.GetBetOfUser_byID(s.dealerHand.userId) * int64(tiLeThangDealer)
+		fmt.Println("Tiền dealer win = ", moneyDealerWin)
+
+		phanTramTienHo := s.GetTiLeTienHo_User(s.dealerHand.userId)
+		fmt.Println("Phần trăm tiền hồ dealer phải trả = ", phanTramTienHo)
+		tienHo_playerPaid := int64((float64(phanTramTienHo) / 100) * float64(moneyDealerWin))
+		fmt.Println("Tiền hồ mà player phải trả = ", tienHo_playerPaid)
+
+		moneyDealerWin_fact := moneyDealerWin - tienHo_playerPaid
+		fmt.Println("Tiền thắng nhận của player = ", moneyDealerWin_fact)
+
+		if s.playerIsDealer != "" {
+			s.moneyOfServer += tienHo_playerPaid
+		}
+
 		if moneyInWalletOfPlayer >= moneyDealerWin { // player đủ tiền trả
-			s.addMoneyForDealerWin(moneyDealerWin)                                 // + tiền dealer win
-			s.substractMoneyForPlayerToPlayingPrecence(userIdLose, moneyDealerWin) // - tiền player lose
+			s.setMoneyForDealerWin(userIdLose, moneyDealerWin, moneyDealerWin_fact, moneyDealerWin)
 		} else { // player ko đủ tiền trả
-			s.addMoneyForDealerWin(moneyInWalletOfPlayer)                            // + tiền dealer win : set money = all money in wallet
-			s.substractMoneyForPlayerToPlayingPrecence(userIdLose, moneyBetOfPlayer) // - tiền player lose : set money = bet
-			s.userBets[userIdLose].First = 0                                         // set bet for player lose
+			s.setMoneyForDealerWin(userIdLose, moneyDealerWin, moneyDealerWin_fact, moneyBetOfPlayer)
 		}
 	}
 }
 
 func (s *MatchState) calMoneyForPlayerWin_dealerIsServer(userIdWin []string) {
+	fmt.Println(".... tính tiền thắng cho player .... với dealer is server")
 	if len(userIdWin) > 0 {
 		for _, userIdWin := range userIdWin {
+			fmt.Println("\nPlayer_", userIdWin, " WIN Dealer_", s.playerIsDealer)
 			for _, userHand := range s.userHands {
 				if userHand.userId == userIdWin {
 					s.addMoneyForPlayerToPlayingPrecence(userIdWin, s.getMoneyWinOfPlayer(userIdWin, userHand))
@@ -586,8 +681,10 @@ func (s *MatchState) checkDealerHaveEnoughMoneyPaid(userIdWin []string) int64 {
 func (s *MatchState) calMoneyForPlayerWin_dealerIsPlayer(userIdWin []string) {
 	if len(userIdWin) > 0 {
 		sumPlayerWin := s.checkDealerHaveEnoughMoneyPaid(userIdWin)
+		fmt.Println("Tổng tiền các user win = ", sumPlayerWin)
 		if sumPlayerWin >= 0 {
 			for _, userIdWin := range userIdWin {
+				fmt.Println("\nPlayer_", userIdWin, " WIN Dealer_", s.playerIsDealer)
 				for _, userHand := range s.userHands {
 					if userHand.userId == userIdWin {
 						// update wallet of user
@@ -612,22 +709,40 @@ func (s *MatchState) calMoneyForPlayerWin_dealerIsPlayer(userIdWin []string) {
 }
 
 func (s *MatchState) getMoneyWinOfPlayer(userIdWin string, userHand *Hand) int64 {
+	fmt.Println("\nChạy vào function getMoneyWinOfPlayer() ")
 	tiLeThang_player := userHand.GetTiLeThangThuaPlayer()
 	moneyWin_player_fact := s.GetBetOfUser_byID(userIdWin) * int64(tiLeThang_player)
-	tienHo := s.GetTiLeTienHo_User(userIdWin)
-	tienHo_playerPaid := int64((float64(tienHo) / 100)) * moneyWin_player_fact
+	phanTramTienHo := s.GetTiLeTienHo_User(userIdWin)
+	tienHo_playerPaid := int64((float64(phanTramTienHo) / 100) * float64(moneyWin_player_fact))
+
+	s.moneyOfServer += tienHo_playerPaid // cộng tiền hồ vào cho server
 	moneyWin_player_after := moneyWin_player_fact - tienHo_playerPaid
+
+	fmt.Println("\n\nTỉ lệ thắng player = ", tiLeThang_player)
+	fmt.Println("Tiền mà player win chưa trừ VAT = ", moneyWin_player_fact)
+	fmt.Println("Phần trăm tiền hồ của player = ", phanTramTienHo)
+	fmt.Println("Tiền hồ player phải trả server = ", tienHo_playerPaid)
+	fmt.Println("Tiền mà player thực nhận = ", moneyWin_player_after)
 	return moneyWin_player_after
 }
 
 func (s *MatchState) getMoneyWinOfPlayer_DealerIsPlayerNoEnoughMoneyToPaid(userIdWin string, userHand *Hand, sumPlayerWin int64) int64 {
+	fmt.Println("Chạy vào func ")
 	tiLeThang_player := int64(userHand.GetTiLeThangThuaPlayer())
 	moneyUserWin := s.getMoneyWinOfPlayer(userIdWin, userHand)
 	moneyRemainingOfDealer := s.POT
 	moneyPlayerReceive := ((moneyUserWin / sumPlayerWin) * moneyRemainingOfDealer) * tiLeThang_player
-	tienHo := s.GetTiLeTienHo_User(userIdWin)
-	tienHo_playerPaid := int64((float64(tienHo) / 100)) * moneyPlayerReceive
+	phanTramTienHo := s.GetTiLeTienHo_User(userIdWin)
+	tienHo_playerPaid := int64((float64(phanTramTienHo) / 100)) * moneyPlayerReceive
+	s.moneyOfServer += tienHo_playerPaid // cộng tiền hồ vào cho server
 	moneyWin_player_after := moneyPlayerReceive - tienHo_playerPaid
+
+	fmt.Println("\n\nTỉ lệ thắng player = ", tiLeThang_player)
+	fmt.Println("Tiền mà player win chưa trừ VAT = ", moneyUserWin)
+	fmt.Println("Phần trăm tiền hồ của player = ", phanTramTienHo)
+	fmt.Println("Tiền hồ player phải trả = ", tienHo_playerPaid)
+	fmt.Println("Tiền mà player nhận = ", moneyPlayerReceive)
+	fmt.Println("Tiền mà player thực nhận = ", moneyWin_player_after)
 	return moneyWin_player_after
 }
 
@@ -644,6 +759,9 @@ func (s *MatchState) addMoneyForPlayerToPlayingPrecence(userId string, chipUpdat
 	if ok {
 		presence := playingPresence.(MyPrecense)
 		presence.Chips += chipUpdate
+		s.PlayingPresences.Put(userId, presence)
+		fmt.Printf("player _ %v sau khi cập nhật %+v", userId, presence)
+
 	} else {
 		log.Fatal("Không tìm thấy userID_", userId, " tại func addMoneyForPlayerToPlayingPrecence()!")
 	}
@@ -656,6 +774,7 @@ func (s *MatchState) substractMoneyForPlayerToPlayingPrecence(userId string, chi
 	if ok {
 		presence := playingPresence.(MyPrecense)
 		presence.Chips -= chipUpdate
+		s.PlayingPresences.Put(userId, presence)
 	} else {
 		log.Fatal("Không tìm thấy userID_", userId, " tại func addMoneyForPlayerToPlayingPrecence()!")
 	}
@@ -667,6 +786,7 @@ func (s *MatchState) addMoneyForDealerWin(chipUpdate int64) {
 	} else {
 		s.POT += chipUpdate
 	}
+
 }
 
 func (s *MatchState) getMoneyOfPlayingPrecense(userId string) int64 {
@@ -774,7 +894,7 @@ func (s *MatchState) GetBetOfUser_byID(userId string) int64 {
 	if bet, exist := s.userBets[userId]; exist {
 		return bet.First
 	}
-	log.Fatal("UserId _", userId, " không tồn tại trong userBet!, Error at func GetBetOfUser_byID()!")
+	log.Println("UserId _", userId, " không tồn tại trong userBet!, Error at func GetBetOfUser_byID()!")
 	return 0
 }
 
@@ -783,10 +903,13 @@ func (s *MatchState) chiaBaiChoPlayerTuongUng() {
 	if len(s.userBets) > 0 {
 		for _, userBet := range s.userBets { // lấy danh sách userBet - lấy ra userID tham gia
 			fmt.Println("Chia bài cho user hiện tại có id: " + userBet.UserId)
+			fmt.Println("s.deck.Dealt trước đó = ", s.deck.Dealt)
 			listCard_chia2La, err := s.deck.Deal(2) // mỗi userBet - lấy ra 2 lá bài trong bộ bài
 
 			if err != nil {
-				log.Fatal("Lỗi khi chia bài : ", err, " , khi chia bài cho user: ", userBet.UserId)
+				log.Println("Lỗi khi chia bài : ", err, " , khi chia bài cho user: ", userBet.UserId)
+				s.deck = NewDeck()
+				fmt.Println("s.deck.Dealt = ", s.deck.Dealt)
 			}
 
 			// chia bài cho dealer
@@ -963,6 +1086,7 @@ func (s *MatchState) setAddBet_forPlayerAndDealer() {
 func (s *MatchState) setSubstractBet_forPlayerAndDealer() {
 	if len(s.userBets) > 0 {
 		for _, userBet := range s.userBets {
+
 			chipsUserBet := s.GetBetOfUser_byID(userBet.UserId) * (100 - int64(s.randDomPercentBet())) / 100
 			fmt.Println("UserId = ", userBet.UserId, ", Đặt cược = ", chipsUserBet, " tiền đặt cược trước đó = ", userBet.First)
 
@@ -987,6 +1111,23 @@ func (s *MatchState) checkDealerHand_haveTypeShan() bool {
 func (s *MatchState) isPlayerHave_TypeShan(userIdPlayer string) bool {
 	playerPoint, playerTypeHand := s.userHands[userIdPlayer].Eval()
 	return playerPoint >= 0 && playerTypeHand != pb.ShanGameHandType_SHANGAME_HAND_TYPE_SHAN && len(s.userHands[userIdPlayer].first) <= 3
+}
+
+func (s *MatchState) getRandomPlayerBocBai() []string {
+	userIdBocBai := []string{}
+	dem := int(0)
+	for _, key := range s.PlayingPresences.Keys() {
+		userId, ok := key.(string)
+		if ok {
+			if dem == 2 {
+				break
+			}
+			userIdBocBai = append(userIdBocBai, userId)
+			dem++
+		}
+
+	}
+	return userIdBocBai
 }
 
 // list các user muốn rút gồm cả dealer
@@ -1072,7 +1213,7 @@ func (s *MatchState) PrintInfoOfBetInMatch() {
 			fmt.Println("Userid = ", userBet, ", value = ", userBet.First)
 		}
 	} else {
-		log.Println("Chưa có player nào đặt cược!")
+		log.Fatal("Chưa có player nào đặt cược!")
 	}
 }
 

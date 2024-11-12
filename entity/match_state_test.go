@@ -8,6 +8,19 @@ import (
 	pb "github.com/nakamaFramework/cgp-common/proto"
 )
 
+/*
+cac truong hop co the check
+
+	server = dealer
+	user = dealer
+	user = join when user other join game
+
+	deal card and manage card
+	cal point and return player win
+
+	end game
+*/
+
 var default_presence = []struct {
 	UserId     string
 	MyPrecense MyPrecense
@@ -34,57 +47,56 @@ var test_mul_Player_playWithServer = []pb.Player{
 	{Id: "User8", VipLevel: 7, Wallet: "800000"},
 }
 
-/*
-cac truong hop co the check
+var test_1Player_playWithServer = []pb.Player{
+	{Id: "User1", VipLevel: 2, Wallet: "90000"},
+	{Id: "User2", VipLevel: 4, Wallet: "125000"},
+	{Id: "User3", VipLevel: 1, Wallet: "81000"},
+	{Id: "User4", VipLevel: 6, Wallet: "110000"},
+	// {Id: "User5", VipLevel: 3, Wallet: "25000"},
+	// {Id: "User6", VipLevel: 7, Wallet: "30000"},
+	// {Id: "User7", VipLevel: 7, Wallet: "30000"},
+	// {Id: "User8", VipLevel: 7, Wallet: "30000"},
+}
 
-	server = dealer
-	user = dealer
-	user = join when user other join game
+func TestMatchState_MatchLoop(t *testing.T) {
 
-	deal card and manage card
-	cal point and return player win
+	s := NewMatchState(&MatchLabel{
+		Open: 2,
+		// Bet:      5000, // mức cược của dealer is server
+		Code:     "test",
+		Name:     "test_table",
+		Password: "",
+		MaxSize:  MaxPresences,
+	})
+	// xóa thông tin của các user ko cần thiết tại đây: userHand, dealerHand, set lại mức cược
 
-	end game
-*/
-func TestMatchState_hoan(t *testing.T) {
-	havePlayingPrecence := true
-	for havePlayingPrecence {
-		fmt.Println("Preparing to play game...")
-		s := NewMatchState(&MatchLabel{
-			Open:     2,
-			Bet:      5000,
-			Code:     "test",
-			Name:     "test_table",
-			Password: "",
-			MaxSize:  MaxPresences,
-		})
-		fmt.Printf("Thiết lập thông số cho 1 trận đấu...")
+	s.Label.Bet = 5000
+	// user request vào game
+	fmt.Printf("Thiết lập thông số cho 1 trận đấu...")
+	fmt.Println("khởi tạo trận đấu .... ")
+	fmt.Println("Các user join vào game vào precense of match ....")
+	if len(test_1Player_playWithServer) > 0 {
+		fmt.Println("run. ..")
+		s.setPresenceInMatch(test_1Player_playWithServer)
+	} else {
+		log.Fatal("Không có player nào hiện tại!")
+	}
 
-		// user request vào game
-		fmt.Println("khởi tạo trận đấu .... ")
+	soLaLap := int(0)
 
-		fmt.Println("Các user join vào game vào precense of match ....")
-		for _, precense := range default_presence {
-			s.Presences.Put(precense.UserId, precense.MyPrecense)
-		}
-
-		// kiểm tra xem user có đủ điều kiện làm Dealer hay không ?
-		// giả sử player muốn làm dealer
-		// set trường hợp, server đang là dealer , player user5 xin làm dealer
+	for len(s.Presences.Keys()) > 0 {
+		soLaLap++
+		// player chỉ muốn join để chơi với server
+		// những thông số nào cần set cho dealer? userBet, dealerHand,
+		lst_userID_registerDealer := []string{}
 		s.playerIsDealer = ""
 		// 	trước khi vào trận đấu  - player xin làm dealer
-		if s.playerIsDealer == "" { // server is  dealer
-			// fmt.Println("chạy vào đăng ký làm dealer")
-			// lấy chips của user muốn xin làm dealer
-			s.Player_RegisterDealer("User5_dealer")
-		} else { // player is dealer - player khác xin làm dealer thay thế
-			// giả sử "User5_dealer" là player xin làm dealer
-			s.set_PlayerCanBeDealer("User5_dealer")
-		}
+		fmt.Println("Sys xử lý nếu có player đăng ký làm dealer, ngược lại set các thông số cho server là dealer...")
+		s.RegisterDealer(lst_userID_registerDealer)
 
-		fmt.Println("Server or Player is Dealer ? ", s.playerIsDealer, ", \t Pot = ", s.POT)
 		fmt.Println("DealerHand current: ", s.dealerHand.userId)
 		fmt.Println("UserHand current have size: ", len(s.userHands))
+		fmt.Println("Server or Player is Dealer ? ", s.playerIsDealer, ", \t Pot = ", s.POT)
 
 		s.Init()
 		// set info of player with fake precencese
@@ -108,46 +120,47 @@ func TestMatchState_hoan(t *testing.T) {
 
 			s.setAddBet_forPlayerAndDealer()
 			fmt.Println("Xem thông tin các mức cược của các player - khi add mức cược ")
-			if len(s.userBets) > 0 {
-				for userId, player := range s.userBets {
+			s.PrintInfoOfBetInMatch()
 
-					fmt.Println("Bet of ", userId, ", chip = ", player.First) // mong doi = 500
-				}
-			}
-
-			fmt.Println("Giảm mức cược cho player ..")
 			s.setSubstractBet_forPlayerAndDealer()
-
 			// lấy ra mức cược player đã đặt theo id tương ứng
 			fmt.Println("\nXem thông tin các mức cược của các player - sau khi trừ đi mức cược ")
-			if len(s.userBets) > 0 {
-				for userId, player := range s.userBets {
-
-					fmt.Println("Bet of ", userId, ", chip = ", player.First) // mong doi = 500
-				}
-			}
+			s.PrintInfoOfBetInMatch()
 		} else {
-			log.Fatal("Allow Bet chưa được cho phép cược!")
+			log.Fatal("Trạng thái allowBet trong trận đấu chưa được thiết lập!")
 		}
 
 		fmt.Println("\nuser request as player .... click deal ")
-
+		// 		nếu s.Dealt < (1 dealer + n player còn lại )* 3 lá
+		// => khởi tạo bộ bài mới => cho ng chơi chơi tiếp
+		checkSLLaBai := (1 + len(s.PlayingPresences.Keys())*3)
+		fmt.Println("checkSLLaBai = ", checkSLLaBai)
+		fmt.Println("s.deck.Dealt = ", s.deck.Dealt)
+		if checkSLLaBai < s.deck.Dealt {
+			s.deck = NewDeck()
+		}
+		fmt.Println("s.deck.Dealt = ", s.deck.Dealt)
 		s.deck.Shuffle()
 
 		fmt.Println("kiểm tra các user nào không đưa ra mức cược => xóa khỏi userBet và playingPrecence...")
 		s.DeletePlayerNotFitBet()
-		fmt.Println("Các user còn lại sau khi kiểm tra mức cược có > 0 hay ko ? = ", len(s.userBets))
+		fmt.Println("Các user còn lại sau khi kiểm tra mức cược có > mức cược tối thiểu ? \nSố lượng userBet còn đặt cược = ", len(s.userBets))
 
 		// duyệt userBet
-		for _, userBet := range s.userBets {
-			fmt.Println("Userid = ", userBet, ", value = ", userBet.First)
-		}
+		s.PrintInfoOfBetInMatch()
 
 		fmt.Println("Chia bài .... cho các user đã đặt cược trong ván game .....")
 		s.chiaBaiChoPlayerTuongUng()
 
 		fmt.Println("\nSố lượng userHand : ", len(s.userHands))
 		fmt.Println("\nLần lượt user : đưa ra lựa chọn bốc bài tiếp hay không ?")
+
+		// gia su các user outgame
+		userIdOutGame := []string{"User1", "User2"}
+		// khởi tạo và gán giá trị vào leavePresence
+		for _, userIdOut := range userIdOutGame {
+			s.LeavePresences.Put(userIdOut, userIdOut) // danh sách các player đang chơi thì out game
+		}
 
 		// kiểm tra bài của dealer = shan ko ?
 		if len(s.userHands) > 0 {
@@ -157,15 +170,17 @@ func TestMatchState_hoan(t *testing.T) {
 			fmt.Println("Dealer ko được pok => user,dealer được bốc bài tiếp")
 			if !deckDealerHand_typeShan {
 				fmt.Println("Player bốc thêm bài...")
-				userId_rutThemBai := []string{"User1", s.dealerHand.userId}
+				// userId_rutThemBai := []string{"User1", "User3", "User6"}
+				userId_rutThemBai := s.getRandomPlayerBocBai()
 
-				s.devideMoreCardForPlayer(userId_rutThemBai, 1)
+				if len(userId_rutThemBai) > 0 {
+					s.devideMoreCardForPlayer(userId_rutThemBai, 1)
+				}
 
 				s.calMoney_whoWin() // kiểm tra user còn đủ điều kiện chơi tiếp ko ? - đã kiểm tra trong hàm ( cả user và player )
 
 			} else {
 				// dealer được bài pok => tính điểm và so sánh bài với các user luôn
-				fmt.Println("Tiếp theo các player sẽ thực hiện so bài với dealer ...")
 				s.calMoney_whoWin() // kiểm tra user còn đủ điều kiện chơi tiếp ko ? - đã kiểm tra trong hàm ( cả user và player )
 			}
 		} else {
@@ -175,124 +190,8 @@ func TestMatchState_hoan(t *testing.T) {
 		// fmt.Printf("====END GAME====\n%v", s.CalcGameFinish())
 		s.getResultEndGame()
 
+		fmt.Println("Số lần lặp  = ", soLaLap)
+		fmt.Println("Presence current = ", len(s.Presences.Keys()))
 	}
-}
-
-var test_1Player_playWithServer = []pb.Player{
-	{Id: "User1", VipLevel: 2, Wallet: "200000"},
-}
-
-// test trường hợp user join a match đang diễn ra
-
-// test trường hợp user request => create a match
-
-// input: a player create a match
-// ouput: match will happen, a player play with a dealer is a server
-// 			match end: when user out game or not enough money
-// 			and player play a game hoàn chỉnh
-
-func TestMatchState_loopMatch(t *testing.T) {
-
-	s := NewMatchState(&MatchLabel{
-		Open: 2,
-		// Bet:      5000, // mức cược của dealer is server
-		Code:     "test",
-		Name:     "test_table",
-		Password: "",
-		MaxSize:  MaxPresences,
-	})
-	s.Label.Bet = 5000
-
-	// user request vào game
-	fmt.Printf("Thiết lập thông số cho 1 trận đấu...")
-	fmt.Println("khởi tạo trận đấu .... ")
-	fmt.Println("Các user join vào game vào precense of match ....")
-	s.setPresenceInMatch(test_1Player_playWithServer)
-
-	// player chỉ muốn join để chơi với server
-	// những thông số nào cần set cho dealer? userBet, dealerHand,
-	lst_userID_registerDealer := []string{}
-	s.playerIsDealer = ""
-	// 	trước khi vào trận đấu  - player xin làm dealer
-	fmt.Println("Sys xử lý nếu có player đăng ký làm dealer, ngược lại set các thông số cho server là dealer...")
-	s.RegisterDealer(lst_userID_registerDealer)
-
-	fmt.Println("DealerHand current: ", s.dealerHand.userId)
-	fmt.Println("UserHand current have size: ", len(s.userHands))
-	fmt.Println("Server or Player is Dealer ? ", s.playerIsDealer, ", \t Pot = ", s.POT)
-
-	s.Init()
-	// set info of player with fake precencese
-	fmt.Println("\nkhởi tạo các user join vào trận đấu để chơi .... ")
-
-	// khi nào thì check maxPresence ?
-	fmt.Println("Thêm các presence vào playingPrecense")
-	s.addPresence_ToPlayingPrecense_InMatch()
-	fmt.Println("Số lượng player được thêm vào _ playingPrecence: ", s.PlayingPresences.Size())
-
-	// them muc cuoc cho user ( chon thong thuong, + - )
-	s.gameState = pb.GameState_GameStatePreparing
-	s.allowBet = true
-	fmt.Println("Các user chọn mức tiền cược để tham gia trận đấu .... ")
-	fmt.Println("Thiết lập trạng thái match = ", s.gameState)
-	fmt.Println("Thiết lập trạng thái cho phép cược = ", s.allowBet)
-
-	if s.allowBet {
-		fmt.Println("Thiết lập mức cược của PlayerIsDealer ... ")
-		fmt.Println("Thiết lập mức cược cho các player ... ")
-
-		s.setAddBet_forPlayerAndDealer()
-		fmt.Println("Xem thông tin các mức cược của các player - khi add mức cược ")
-		s.PrintInfoOfBetInMatch()
-
-		s.setSubstractBet_forPlayerAndDealer()
-		// lấy ra mức cược player đã đặt theo id tương ứng
-		fmt.Println("\nXem thông tin các mức cược của các player - sau khi trừ đi mức cược ")
-		s.PrintInfoOfBetInMatch()
-	} else {
-		log.Fatal("Trạng thái allowBet trong trận đấu chưa được thiết lập!")
-	}
-
-	fmt.Println("\nuser request as player .... click deal ")
-	s.deck.Shuffle()
-
-	fmt.Println("kiểm tra các user nào không đưa ra mức cược => xóa khỏi userBet và playingPrecence...")
-	s.DeletePlayerNotFitBet()
-	fmt.Println("Các user còn lại sau khi kiểm tra mức cược có > 0 hay ko ? = ", len(s.userBets))
-
-	// duyệt userBet
-	s.PrintInfoOfBetInMatch()
-
-	fmt.Println("Chia bài .... cho các user đã đặt cược trong ván game .....")
-	s.chiaBaiChoPlayerTuongUng()
-
-	fmt.Println("\nSố lượng userHand : ", len(s.userHands))
-	fmt.Println("\nLần lượt user : đưa ra lựa chọn bốc bài tiếp hay không ?")
-
-	// kiểm tra bài của dealer = shan ko ?
-	if len(s.userHands) > 0 {
-		deckDealerHand_typeShan := s.checkDealerHand_haveTypeShan()
-		fmt.Println("Dealer được bài shan không ? = ", deckDealerHand_typeShan)
-
-		fmt.Println("Dealer ko được pok => user,dealer được bốc bài tiếp")
-		if !deckDealerHand_typeShan {
-			fmt.Println("Player bốc thêm bài...")
-			userId_rutThemBai := []string{"User1", s.dealerHand.userId}
-
-			s.devideMoreCardForPlayer(userId_rutThemBai, 1)
-
-			s.calMoney_whoWin() // kiểm tra user còn đủ điều kiện chơi tiếp ko ? - đã kiểm tra trong hàm ( cả user và player )
-
-		} else {
-			// dealer được bài pok => tính điểm và so sánh bài với các user luôn
-			fmt.Println("Tiếp theo các player sẽ thực hiện so bài với dealer ...")
-			s.calMoney_whoWin() // kiểm tra user còn đủ điều kiện chơi tiếp ko ? - đã kiểm tra trong hàm ( cả user và player )
-		}
-	} else {
-		log.Fatal("Không có bộ bài nào để xét lose or win!")
-	}
-
-	// fmt.Printf("====END GAME====\n%v", s.CalcGameFinish())
-	s.getResultEndGame()
 
 }
