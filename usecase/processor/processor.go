@@ -41,13 +41,14 @@ func (p *Processor) ProcessNewGame(
 ) {
 	p.engine.NewGame(s)
 	listPlayerId := make([]string, 0)
-	// deal
+	// deal player
 	for _, presence := range s.GetPlayingPresences() {
 		if s.IsBet(presence.GetUserId()) {
 			listPlayerId = append(listPlayerId, presence.GetUserId())
 			s.AddCards(p.engine.Deal(2), presence.GetUserId(), pb.ShanGameHandN0_SHANGAME_HAND_1ST)
 		}
 	}
+	// deal dealer
 	s.AddCards(p.engine.Deal(2), "", pb.ShanGameHandN0_SHANGAME_HAND_1ST)
 	p.notifyInitialDealCard(
 		ctx, nk, logger, dispatcher, s,
@@ -65,16 +66,6 @@ func (p *Processor) ProcessNewGame(
 					{
 						code:     "main",
 						duration: time.Second * 10,
-					},
-				},
-			},
-			{
-				code:   "insurance",
-				isGlob: true,
-				phases: []*Phase{
-					{
-						code:     "main",
-						duration: time.Second * 5,
 					},
 				},
 			},
@@ -133,7 +124,6 @@ func (p *Processor) ProcessTurnbase(ctx context.Context,
 		switch turnInfo.roundCode {
 		case "bet":
 			s.SetAllowBet(true)
-			s.SetAllowInsurance(false)
 			s.SetAllowAction(false)
 		case "playing":
 			if s.GetDealerHand().First.Type == pb.ShanGameHandType_SHANGAME_HAND_TYPE_SHAN {
@@ -142,7 +132,6 @@ func (p *Processor) ProcessTurnbase(ctx context.Context,
 			}
 			s.InitVisited()
 			s.SetAllowBet(false)
-			s.SetAllowInsurance(false)
 			s.SetAllowAction(true)
 		}
 	}
@@ -198,19 +187,19 @@ func (p *Processor) ProcessMessageFromUser(
 				continue
 			}
 			switch bet.Code {
-			case pb.ShanGameBetCode_SHANGAME_BET_DOUBLE:
-				if s.IsCanDoubleBet(bet.UserId, wallet.Chips) {
-					chip := s.DoubleBet(bet.UserId)
-					p.notifyUpdateBet(ctx, nk, logger, dispatcher, s, bet.UserId, chip, pb.ShanGameHandN0_SHANGAME_HAND_1ST)
-				}
-			case pb.ShanGameBetCode_SHANGAME_BET_REBET:
-				if s.IsCanRebet(bet.UserId, wallet.Chips) {
-					chip := s.Rebet(bet.UserId)
-					p.notifyUpdateBet(ctx, nk, logger, dispatcher, s, bet.UserId, chip, pb.ShanGameHandN0_SHANGAME_HAND_1ST)
-				}
+			// case pb.ShanGameBetCode_SHANGAME_BET_DOUBLE:
+			// 	if s.IsCanDoubleBet(bet.UserId, wallet.Chips) {
+			// 		chip := s.DoubleBet(bet.UserId)
+			// 		p.notifyUpdateBet(ctx, nk, logger, dispatcher, s, bet.UserId, chip, pb.ShanGameHandN0_SHANGAME_HAND_1ST)
+			// 	}
+			// case pb.ShanGameBetCode_SHANGAME_BET_REBET:
+			// 	if s.IsCanRebet(bet.UserId, wallet.Chips) {
+			// 		chip := s.Rebet(bet.UserId)
+			// 		p.notifyUpdateBet(ctx, nk, logger, dispatcher, s, bet.UserId, chip, pb.ShanGameHandN0_SHANGAME_HAND_1ST)
+			// 	}
 			case pb.ShanGameBetCode_SHANGAME_BET_NORMAL:
 				if s.IsCanBet(bet.UserId, wallet.Chips, bet) {
-					s.AddBetOfUserBet(bet)
+					s.AddBet_inUserBets(bet.UserId, wallet.Chips)
 					p.notifyUpdateBet(ctx, nk, logger, dispatcher, s, bet.UserId, bet.Chips, pb.ShanGameHandN0_SHANGAME_HAND_1ST)
 				}
 			}
@@ -250,13 +239,6 @@ func (p *Processor) ProcessMessageFromUser(
 						)
 						// after that hit, player can't hit anymore -> next hand if possible else next turn
 						if !s.IsCanHit(action.UserId, s.GetCurrentHandN0()) {
-							if s.GetCurrentHandN0() == pb.ShanGameHandN0_SHANGAME_HAND_1ST && len(s.GetPlayerPartOfHand(action.UserId, pb.ShanGameHandN0_SHANGAME_HAND_2ND).Cards) == 2 {
-								s.SetCurrentHandN0(pb.ShanGameHandN0_SHANGAME_HAND_2ND)
-								p.turnBaseEngine.RePhase()
-							} else {
-								p.turnBaseEngine.NextPhase()
-							}
-						} else {
 							p.turnBaseEngine.RePhase()
 						}
 					}
@@ -273,9 +255,9 @@ func (p *Processor) ProcessMessageFromUser(
 			p.broadcastMessage(
 				logger, dispatcher, int64(pb.OpCodeUpdate_OPCODE_UPDATE_TABLE),
 				&pb.ShanGameUpdateDesk{
-					IsNewTurn:            false,
-					IsInsuranceTurnEnter: s.IsAllowInsurance(),
-					InTurn:               s.GetCurrentTurn(),
+					IsNewTurn: false,
+					// IsInsuranceTurnEnter: s.IsAllowInsurance(),
+					InTurn: s.GetCurrentTurn(),
 				}, []runtime.Presence{s.GetPresence(message.GetUserId())}, nil, true,
 			)
 		}
@@ -334,19 +316,16 @@ func (p *Processor) notifyUpdateBet(
 		bet.Insurance = chip
 	} else if pos == pb.ShanGameHandN0_SHANGAME_HAND_1ST {
 		bet.First = chip
-	} else {
-		bet.Second = chip
 	}
 
 	p.broadcastMessage(
 		logger, dispatcher, int64(pb.OpCodeUpdate_OPCODE_UPDATE_TABLE),
 		&pb.ShanGameUpdateDesk{
-			IsInsuranceTurnEnter: false,
-			IsNewTurn:            false,
-			IsUpdateBet:          true,
-			IsUpdateLegalAction:  false,
-			IsSplitHand:          false,
-			Bet:                  bet,
+			IsNewTurn:           false,
+			IsUpdateBet:         true,
+			IsUpdateLegalAction: false,
+			IsSplitHand:         false,
+			Bet:                 bet,
 		},
 		nil, nil, true,
 	)
@@ -436,15 +415,19 @@ func (p *Processor) calcRewardForUserPlaying(
 			UserId:           betResult.UserId,
 			AmountChipBefore: mapUserWallet[betResult.UserId].Chips,
 		}
-		balance.AmountChipAdd = betResult.First.Total + betResult.Second.Total + betResult.Insurance.Total
+		balance.AmountChipAdd = betResult.First.Total
 		if balance.AmountChipAdd > 0 {
 			fee := int64(0)
-			presence, ok := s.GetPresence(betResult.UserId).(entity.MyPrecense)
-			percentFeeGame := entity.GetFeeGameByLevel(0)
-			if ok {
-				percentFeeGame = entity.GetFeeGameByLevel(int(presence.VipLevel))
+			// presence, ok := s.GetPresence(betResult.UserId).(entity.MyPrecense)
+
+			// viết 1 hàm kiểm tra presence có hay ko thôi
+			percentFeeGame := int64(0)
+			if s.IsExitsPresence(betResult.UserId) {
+				percentFeeGame = s.GetTiLeTienHo_User(betResult.UserId)
 			}
-			fee = balance.AmountChipAdd / 100 * int64(percentFeeGame)
+			// fee = balance.AmountChipAdd / 100 * int64(percentFeeGame)
+			fee = int64((float64(percentFeeGame) / 100) * float64(balance.AmountChipAdd))
+
 			balance.AmountChipCurrent = balance.AmountChipBefore + balance.AmountChipAdd - fee
 		} else {
 			balance.AmountChipCurrent = balance.AmountChipBefore
@@ -474,9 +457,10 @@ func (p *Processor) notifyInitialDealCard(
 	dispatcher runtime.MatchDispatcher,
 	s *entity.MatchState,
 ) error {
+	// duyệt ds playing đang trong game
 	for _, presence := range s.GetPlayingPresences() {
-		if s.IsBet(presence.GetUserId()) {
-			p.broadcastMessage(
+		if s.IsBet(presence.GetUserId()) { // kiểm tra user đã đặt cược hay chưa ?
+			p.broadcastMessage( // từ process đưa ra thông báo và thiết lập các thông tin cho broadcastMessage
 				logger, dispatcher, int64(pb.OpCodeUpdate_OPCODE_UPDATE_DEAL),
 				&pb.ShanGameUpdateDeal{
 					IsBanker:                 false,

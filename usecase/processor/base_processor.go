@@ -42,12 +42,14 @@ func (m *BaseProcessor) NotifyUpdateGameState(s *entity.MatchState,
 		updateState, nil, nil, true)
 }
 
-func (m *BaseProcessor) ProcessApplyPresencesLeave(ctx context.Context,
+func (m *BaseProcessor) ProcessApplyPresencesLeave(
+	ctx context.Context,
 	logger runtime.Logger,
 	nk runtime.NakamaModule,
 	db *sql.DB,
 	dispatcher runtime.MatchDispatcher,
 	s *entity.MatchState) {
+
 	pendingLeaves := s.GetLeavePresences()
 	if len(pendingLeaves) == 0 {
 		return

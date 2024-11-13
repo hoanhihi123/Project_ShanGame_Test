@@ -33,7 +33,32 @@ func (m *Engine) Deal(amount int) []*pb.Card {
 	}
 }
 
+// giả sử userId = user quay lại game và muốn join lại trận đấu
+// s  = match và trong này chứa thông tin của các user đã leave khỏi trận đấu
+
 func (m *Engine) RejoinUserMessage(s *entity.MatchState, userId string) map[pb.OpCodeUpdate]proto.Message {
+	// làm sao để lấy ra danh sách trận đấu ? làm sao để kiểm tra sự tồn tại của trận đấu ?
+
+	// giả sử trận đấu tồn tại
+
+	// check gamestate cho trường hợp dưới
+	// trường hợp: trận đấu đang diễn ra
+	// trường hợp: trận đấu đã kết thúc và đang khởi tạo ván chơi mới
+	gameState := s.GetGameState()
+	if gameState == pb.GameState_GameStatePlay { // state = play => chắc chắn trận đấu còn hợp lệ để xảy ra
+		// add user lại vào trận đấu => add thông tin gì ? ,
+		// từ userId => lấy thông tin của presenceLeave => add vào playingPresence
+		leavePresence := s.GetInfoLeavePreseceByUserId(userId)
+		s.PlayingPresences.Put(userId, leavePresence)
+		s.PlayingPresences.Remove(userId) // xóa user khỏi presenceLeave
+		// làm sao để nó tiếp tục chơi game được ?
+		// còn phụ thuộc vào hệ thống xử lý như thế nào ?
+	}
+	// các trường hợp còn lại thì sao ? khác gì z ?
+
+	// giả sử nhảy vào trường hợp còn lại => trận đấu ko tồn tại ?
+	// => xếp user này vào 1 match bất kỳ còn đủ điều kiện để chơi.... bằng cách nào ?
+
 	return nil
 }
 

@@ -12,8 +12,6 @@ type UseCase interface {
 	MustState() stateless.State
 	Trigger(ctx context.Context, trigger stateless.Trigger, args ...interface{}) error
 	TriggerIdle(ctx context.Context, args ...interface{}) error
-
-	//
 	GetPbState() pb.GameState
 	IsPlayingState() bool
 	IsReward() bool
