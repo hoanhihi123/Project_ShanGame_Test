@@ -31,7 +31,6 @@ func NewMatchProcessor(
 		NewTurnBaseEngine(),
 	}
 }
-
 func (p *Processor) ProcessNewGame(
 	ctx context.Context,
 	nk runtime.NakamaModule,

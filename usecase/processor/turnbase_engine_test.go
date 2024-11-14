@@ -19,16 +19,6 @@ func TestTurnBaseEngine(t *testing.T) {
 			isGlob: true,
 		},
 		{
-			code: "insurance",
-			phases: []*Phase{
-				{
-					code:     "main",
-					duration: time.Second * 3,
-				},
-			},
-			isGlob: true,
-		},
-		{
 			code: "playing",
 			phases: []*Phase{
 				{

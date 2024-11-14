@@ -159,8 +159,8 @@ func (s *MatchState) GetUserBetById(userId string) *pb.ShanGamePlayerBet { retur
 
 // check can bet ?
 func (s *MatchState) IsCanBet(userId string, balance int64, bet *pb.ShanGameBet) bool {
-	if bet.Chips+s.userBets[userId].First > int64(MaxBetAllowed*s.Label.Bet) {
-		return false
+	if bet.Chips+s.userBets[userId].First > int64(MinBetAllowed*10) {
+		return true
 	}
 	if balance < bet.Chips {
 		return false

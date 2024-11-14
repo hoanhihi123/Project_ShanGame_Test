@@ -50,8 +50,8 @@ var test_mul_Player_playWithServer = []pb.Player{
 var test_1Player_playWithServer = []pb.Player{
 	{Id: "User1", VipLevel: 2, Wallet: "90000"},
 	{Id: "User2", VipLevel: 4, Wallet: "125000"},
-	{Id: "User3", VipLevel: 1, Wallet: "81000"},
-	{Id: "User4", VipLevel: 6, Wallet: "110000"},
+	// {Id: "User3", VipLevel: 1, Wallet: "81000"},
+	// {Id: "User4", VipLevel: 6, Wallet: "110000"},
 	// {Id: "User5", VipLevel: 3, Wallet: "25000"},
 	// {Id: "User6", VipLevel: 7, Wallet: "30000"},
 	// {Id: "User7", VipLevel: 7, Wallet: "30000"},

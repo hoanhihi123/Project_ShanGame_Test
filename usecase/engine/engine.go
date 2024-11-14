@@ -4,7 +4,6 @@ import (
 	"shangame-module/entity"
 
 	pb "github.com/nakamaFramework/cgp-common/proto"
-
 	"google.golang.org/protobuf/proto"
 )
 
@@ -34,30 +33,22 @@ func (m *Engine) Deal(amount int) []*pb.Card {
 }
 
 // giả sử userId = user quay lại game và muốn join lại trận đấu
-// s  = match và trong này chứa thông tin của các user đã leave khỏi trận đấu
 
 func (m *Engine) RejoinUserMessage(s *entity.MatchState, userId string) map[pb.OpCodeUpdate]proto.Message {
-	// làm sao để lấy ra danh sách trận đấu ? làm sao để kiểm tra sự tồn tại của trận đấu ?
 
-	// giả sử trận đấu tồn tại
-
-	// check gamestate cho trường hợp dưới
-	// trường hợp: trận đấu đang diễn ra
-	// trường hợp: trận đấu đã kết thúc và đang khởi tạo ván chơi mới
+	// trước khi dùng func , người sử dụng func đã phải kiểm tra sự tồn tại r
 	gameState := s.GetGameState()
-	if gameState == pb.GameState_GameStatePlay { // state = play => chắc chắn trận đấu còn hợp lệ để xảy ra
-		// add user lại vào trận đấu => add thông tin gì ? ,
-		// từ userId => lấy thông tin của presenceLeave => add vào playingPresence
-		leavePresence := s.GetInfoLeavePreseceByUserId(userId)
-		s.PlayingPresences.Put(userId, leavePresence)
-		s.PlayingPresences.Remove(userId) // xóa user khỏi presenceLeave
-		// làm sao để nó tiếp tục chơi game được ?
-		// còn phụ thuộc vào hệ thống xử lý như thế nào ?
-	}
-	// các trường hợp còn lại thì sao ? khác gì z ?
+	if gameState == pb.GameState_GameStatePlay && s != nil { // state = play => chắc chắn trận đấu còn hợp lệ để xảy ra
 
-	// giả sử nhảy vào trường hợp còn lại => trận đấu ko tồn tại ?
-	// => xếp user này vào 1 match bất kỳ còn đủ điều kiện để chơi.... bằng cách nào ?
+		s.LeavePresences.Remove(userId) // xóa user
+		// opCodeArr := []pb.OpCodeUpdate{pb.OpCodeUpdate_OPCODE_USER_IN_TABLE_INFO, pb.OpCodeUpdate_OPCODE_UPDATE_TABLE}
+		// opCodeArr2 := make(map[pb.OpCodeUpdate]proto.Message, 0)
+
+		// message := proto.Message{}
+		// opCodeArr2[pb.OpCodeUpdate_OPCODE_UPDATE_USER_INFO] = proto.MessageName(proto.Message.ProtoReflect().Get())
+		// return opco
+	}
+	// giả sử nhảy vào trường hợp còn lại => trận đấu ko còn tồn tại => ko player ko thể join vì két thúc trận đấu => match remove
 
 	return nil
 }
