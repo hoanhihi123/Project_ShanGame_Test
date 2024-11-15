@@ -48,7 +48,7 @@ func (p *Processor) ProcessNewGame(
 		}
 	}
 	// deal dealer
-	s.AddCards(p.engine.Deal(2), "", pb.ShanGameHandN0_SHANGAME_HAND_1ST)
+	s.AddCards(p.engine.Deal(2), s.GetDealerHand().UserId, pb.ShanGameHandN0_SHANGAME_HAND_1ST)
 	p.notifyInitialDealCard(
 		ctx, nk, logger, dispatcher, s,
 	)
@@ -131,7 +131,7 @@ func (p *Processor) ProcessTurnbase(ctx context.Context,
 			}
 			s.InitVisited()
 			s.SetAllowBet(false)
-			s.SetAllowAction(true)
+			s.SetAllowAction(false)
 		}
 	}
 	if turnInfo.isNewTurn && turnInfo.roundCode == "playing" {
@@ -311,9 +311,7 @@ func (p *Processor) notifyUpdateBet(
 	bet := &pb.ShanGamePlayerBet{
 		UserId: userId,
 	}
-	if pos == pb.ShanGameHandN0_SHANGAME_HAND_UNSPECIFIED {
-		bet.Insurance = chip
-	} else if pos == pb.ShanGameHandN0_SHANGAME_HAND_1ST {
+	if pos == pb.ShanGameHandN0_SHANGAME_HAND_1ST {
 		bet.First = chip
 	}
 

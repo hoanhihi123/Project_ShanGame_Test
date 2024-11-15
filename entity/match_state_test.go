@@ -77,7 +77,7 @@ func TestMatchState_MatchLoop(t *testing.T) {
 	fmt.Println("Các user join vào game vào precense of match ....")
 	if len(test_1Player_playWithServer) > 0 {
 		fmt.Println("run. ..")
-		s.setPresenceInMatch(test_1Player_playWithServer)
+		s.SetPresenceInMatch(test_1Player_playWithServer)
 	} else {
 		log.Fatal("Không có player nào hiện tại!")
 	}
@@ -104,7 +104,7 @@ func TestMatchState_MatchLoop(t *testing.T) {
 
 		// khi nào thì check maxPresence ?
 		fmt.Println("Thêm các presence vào playingPrecense")
-		s.addPresence_ToPlayingPrecense_InMatch()
+		s.AddPresence_ToPlayingPrecense_InMatch()
 		fmt.Println("Số lượng player được thêm vào _ playingPrecence: ", s.PlayingPresences.Size())
 
 		// them muc cuoc cho user ( chon thong thuong, + - )
@@ -118,11 +118,11 @@ func TestMatchState_MatchLoop(t *testing.T) {
 			fmt.Println("Thiết lập mức cược của PlayerIsDealer ... ")
 			fmt.Println("Thiết lập mức cược cho các player ... ")
 
-			s.setAddBet_forPlayerAndDealer()
+			s.SetAddBet_forPlayerAndDealer()
 			fmt.Println("Xem thông tin các mức cược của các player - khi add mức cược ")
 			s.PrintInfoOfBetInMatch()
 
-			s.setSubstractBet_forPlayerAndDealer()
+			s.SetSubstractBet_forPlayerAndDealer()
 			// lấy ra mức cược player đã đặt theo id tương ứng
 			fmt.Println("\nXem thông tin các mức cược của các player - sau khi trừ đi mức cược ")
 			s.PrintInfoOfBetInMatch()
@@ -143,14 +143,14 @@ func TestMatchState_MatchLoop(t *testing.T) {
 		s.deck.Shuffle()
 
 		fmt.Println("kiểm tra các user nào không đưa ra mức cược => xóa khỏi userBet và playingPrecence...")
-		s.DeletePlayerNotFitBet()
+		s.DeletedPlayerNotFitBet()
 		fmt.Println("Các user còn lại sau khi kiểm tra mức cược có > mức cược tối thiểu ? \nSố lượng userBet còn đặt cược = ", len(s.userBets))
 
 		// duyệt userBet
 		s.PrintInfoOfBetInMatch()
 
 		fmt.Println("Chia bài .... cho các user đã đặt cược trong ván game .....")
-		s.chiaBaiChoPlayerTuongUng()
+		s.ChiaBaiChoPlayerTuongUng()
 
 		fmt.Println("\nSố lượng userHand : ", len(s.userHands))
 		fmt.Println("\nLần lượt user : đưa ra lựa chọn bốc bài tiếp hay không ?")
@@ -164,24 +164,24 @@ func TestMatchState_MatchLoop(t *testing.T) {
 
 		// kiểm tra bài của dealer = shan ko ?
 		if len(s.userHands) > 0 {
-			deckDealerHand_typeShan := s.checkDealerHand_haveTypeShan()
+			deckDealerHand_typeShan := s.CheckDealerHand_haveTypeShan()
 			fmt.Println("Dealer được bài shan không ? = ", deckDealerHand_typeShan)
 
 			fmt.Println("Dealer ko được pok => user,dealer được bốc bài tiếp")
 			if !deckDealerHand_typeShan {
 				fmt.Println("Player bốc thêm bài...")
 				// userId_rutThemBai := []string{"User1", "User3", "User6"}
-				userId_rutThemBai := s.getRandomPlayerBocBai()
+				userId_rutThemBai := s.GetRandomPlayerBocBai()
 
 				if len(userId_rutThemBai) > 0 {
-					s.devideMoreCardForPlayer(userId_rutThemBai, 1)
+					s.DevideMoreCardForPlayer(userId_rutThemBai, 1)
 				}
 
-				s.calMoney_whoWin() // kiểm tra user còn đủ điều kiện chơi tiếp ko ? - đã kiểm tra trong hàm ( cả user và player )
+				s.CalMoney_whoWin() // kiểm tra user còn đủ điều kiện chơi tiếp ko ? - đã kiểm tra trong hàm ( cả user và player )
 
 			} else {
 				// dealer được bài pok => tính điểm và so sánh bài với các user luôn
-				s.calMoney_whoWin() // kiểm tra user còn đủ điều kiện chơi tiếp ko ? - đã kiểm tra trong hàm ( cả user và player )
+				s.CalMoney_whoWin() // kiểm tra user còn đủ điều kiện chơi tiếp ko ? - đã kiểm tra trong hàm ( cả user và player )
 			}
 		} else {
 			log.Fatal("Không có bộ bài nào để xét lose or win!")

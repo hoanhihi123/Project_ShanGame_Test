@@ -22,8 +22,7 @@ func (m *Engine) NewGame(s *entity.MatchState) error {
 	return nil
 }
 
-// số lượng thẻ bài muốn rút
-// trả về các lá bài rút tương ứng
+// rút bài
 func (m *Engine) Deal(amount int) []*pb.Card {
 	if list, err := m.deck.Deal(amount); err != nil {
 		return nil

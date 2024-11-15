@@ -25,7 +25,7 @@ func NewHandFromPb(v *pb.ShanGamePlayerHand) *Hand {
 	}
 }
 
-// convert hand to shangameplayerhand dưới dạng proto buffer
+// return card, point cua hand tuong ung
 func (h *Hand) ToPb() *pb.ShanGamePlayerHand {
 	point1, hand1Type := h.Eval() // use func eval to get point , type hand
 	return &pb.ShanGamePlayerHand{
